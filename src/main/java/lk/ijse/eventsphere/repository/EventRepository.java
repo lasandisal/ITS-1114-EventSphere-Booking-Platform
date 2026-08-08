@@ -21,4 +21,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             EventStatus status, Long categoryId, Pageable pageable);
 
     Page<Event> findByStatus(EventStatus status, Pageable pageable);
+
+    // Delete guards — a category/venue with events still pointing at it
+    // can't be removed without breaking those FKs; the service layer checks
+    // these before calling repository.delete().
+    boolean existsByCategoryId(Long categoryId);
+
+    boolean existsByVenueId(Long venueId);
 }

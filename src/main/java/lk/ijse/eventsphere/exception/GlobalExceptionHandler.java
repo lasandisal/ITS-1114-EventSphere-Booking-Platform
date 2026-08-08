@@ -64,6 +64,16 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "You do not have permission to perform this action", request, null);
     }
 
+    // Business-rule violations raised as plain Java exceptions (bad date
+    // ranges, delete blocked by referential dependents, etc.) — these are
+    // expected/operational, not bugs, so they get 400 with the real message
+    // instead of falling through to the generic 500 handler below.
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<ErrorResponseDTO> handleBadRequest(
+            RuntimeException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
     // Catch-all — anything not explicitly mapped above is treated as an
     // unexpected systemic bug, not surfaced to the client in detail.
     @ExceptionHandler(Exception.class)
