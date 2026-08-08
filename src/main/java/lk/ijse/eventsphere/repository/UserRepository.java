@@ -1,7 +1,7 @@
 package lk.ijse.eventsphere.repository;
 
 import lk.ijse.eventsphere.entity.User;
-import lk.ijse.eventsphere.enums.Role;
+import lk.ijse.eventsphere.enums.RoleName;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,5 +25,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
                    LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')))
               AND (:role IS NULL OR u.role = :role)
             """)
-    Page<User> search(@Param("keyword") String keyword, @Param("role") Role role, Pageable pageable);
+    Page<User> search(@Param("keyword") String keyword, @Param("role") RoleName role, Pageable pageable);
 }

@@ -1,6 +1,6 @@
 package lk.ijse.eventsphere.dto;
 
-import lk.ijse.eventsphere.enums.Role;
+import lk.ijse.eventsphere.enums.RoleName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,5 +17,5 @@ public class AuthResponseDTO {
     private Long userId;
     private String name;
     private String email;
-    private Role role;
+    private RoleName role;
 }

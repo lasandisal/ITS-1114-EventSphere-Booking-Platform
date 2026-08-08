@@ -1,66 +1,72 @@
 package lk.ijse.eventsphere.entity;
 
 import jakarta.persistence.*;
-import lk.ijse.eventsphere.enums.Role;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
+import lk.ijse.eventsphere.enums.UserStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "email"))
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
-@SuperBuilder
-@SQLDelete(sql = "UPDATE users SET deleted = true, deleted_at = NOW() WHERE id = ? AND version = ?")
-@SQLRestriction("deleted = false")
-public class User extends BaseEntity {
+@AllArgsConstructor
+@Builder
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
-    private String name;
+    @Column(name = "full_name", nullable = false, length = 150)
+    private String fullName;
 
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @Column(nullable = false)
-    private String password; // stored as BCrypt hash
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
+
+    @Column(length = 20)
+    private String phone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private Role role;
-
-    // access/login gate — distinct from `deleted` (BaseEntity): an admin can disable
-    // a still-existing account without soft-deleting it, and vice versa isn't allowed
-    // (deleted implies disabled, enforced at the service layer)
-    @Column(nullable = false)
     @Builder.Default
-    private boolean enabled = true;
+    private UserStatus status = UserStatus.ACTIVE;
 
-    @Column(nullable = false, updatable = false)
+    // Many-to-many with roles, JPA manages the user_roles join table directly —
+    // no dedicated entity needed for a pure junction table.
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @Builder.Default
+    private Set<Role> roles = new HashSet<>();
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Version
-    private Long version;
-
-    @OneToMany(mappedBy = "organizer", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Event> organizedEvents = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Booking> bookings = new ArrayList<>();
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

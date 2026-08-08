@@ -3,7 +3,7 @@ package lk.ijse.eventsphere.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lk.ijse.eventsphere.enums.Role;
+import lk.ijse.eventsphere.enums.RoleName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,6 +28,6 @@ public class RegisterRequestDTO {
 
     // USER by default; ORGANIZER can self-register, ADMIN accounts are never created
     // through this endpoint (enforced in the service layer, not just left to the client)
-    private Role role;
+    private RoleName role;
 }
 

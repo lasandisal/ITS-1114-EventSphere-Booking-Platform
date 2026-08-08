@@ -2,72 +2,75 @@ package lk.ijse.eventsphere.entity;
 
 import jakarta.persistence.*;
 import lk.ijse.eventsphere.enums.EventStatus;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+        @Index(name = "idx_event_status_start", columnList = "status, start_datetime")
+})
 @Getter
 @Setter
 @NoArgsConstructor
-@SuperBuilder
-@SQLDelete(sql = "UPDATE events SET deleted = true, deleted_at = NOW() WHERE id = ?")
-@SQLRestriction("deleted = false")
-public class Event extends BaseEntity {
+@AllArgsConstructor
+@Builder
+public class Event {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 150)
-    private String title;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "organizer_id", nullable = false)
+    private Organizer organizer;
 
-    @Column(length = 2000)
-    private String description;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
-    // free-text category used for search/filter (e.g. "Tech", "Music", "Sports")
-    @Column(length = 50)
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "venue_id", nullable = false)
+    private Venue venue;
 
     @Column(nullable = false, length = 200)
-    private String venue;
+    private String title;
 
-    @Column(nullable = false)
-    private LocalDateTime startDateTime;
+    @Lob
+    private String description;
 
-    private LocalDateTime endDateTime;
+    @Column(name = "banner_url", length = 500)
+    private String bannerUrl;
 
-    // business lifecycle (DRAFT/PUBLISHED/CANCELLED/COMPLETED) — independent of `deleted`
-    // (BaseEntity). CANCELLED means the organizer called off the event but it still shows
-    // in history; deleted = true means it's been removed from the platform entirely.
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
     private EventStatus status = EventStatus.DRAFT;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "organizer_id", nullable = false)
-    private User organizer;
+    @Column(name = "start_datetime", nullable = false)
+    private LocalDateTime startDatetime;
 
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<TicketType> ticketTypes = new ArrayList<>();
+    @Column(name = "end_datetime", nullable = false)
+    private LocalDateTime endDatetime;
 
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Booking> bookings = new ArrayList<>();
-
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

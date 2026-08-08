@@ -1,7 +1,7 @@
 package lk.ijse.eventsphere.enums;
 
-public enum Role {
-    USER,
+public enum RoleName {
+    ADMIN,
     ORGANIZER,
-    ADMIN
+    USER
 }
