@@ -2,32 +2,36 @@ package lk.ijse.eventsphere.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lk.ijse.eventsphere.enums.RoleName;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class RegisterRequestDTO {
 
-    @NotBlank
-    private String name;
+    @NotBlank(message = "Full name is required")
+    @Size(max = 150, message = "Full name must not exceed 150 characters")
+    private String fullName;
 
-    @NotBlank @Email
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be a valid address")
+    @Size(max = 150)
     private String email;
 
-    @NotBlank @Size(min = 8, message = "Password must be at least 8 characters")
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, max = 100, message = "Password must be at least 8 characters")
+    // Requires at least one letter and one digit — enforced here rather than
+    // only client-side, since this DTO is also what a direct API call hits.
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$",
+            message = "Password must contain at least one letter and one digit")
     private String password;
 
-    // USER by default; ORGANIZER can self-register, ADMIN accounts are never created
-    // through this endpoint (enforced in the service layer, not just left to the client)
-    private RoleName role;
+    @Pattern(regexp = "^$|^[0-9+\\-\\s]{7,20}$", message = "Phone number is invalid")
+    private String phone;
 }
-

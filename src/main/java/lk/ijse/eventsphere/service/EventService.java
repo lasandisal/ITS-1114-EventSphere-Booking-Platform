@@ -1,32 +1,27 @@
 package lk.ijse.eventsphere.service;
 
-import lk.ijse.eventsphere.dto.CreateEventDTO;
-import lk.ijse.eventsphere.dto.CreateTicketTypeDTO;
-import lk.ijse.eventsphere.dto.EventDTO;
+import lk.ijse.eventsphere.dto.EventCreateRequestDTO;
+import lk.ijse.eventsphere.dto.EventResponseDTO;
+import lk.ijse.eventsphere.dto.EventUpdateRequestDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface EventService {
 
-    EventDTO createEvent(Long organizerId, CreateEventDTO request);
+    EventResponseDTO createEvent(EventCreateRequestDTO request);
 
-    EventDTO updateEvent(Long eventId, Long organizerId, CreateEventDTO request);
+    EventResponseDTO updateEvent(Long eventId, EventUpdateRequestDTO request);
 
-    EventDTO publishEvent(Long eventId, Long organizerId);
+    EventResponseDTO publishEvent(Long eventId);
 
-    EventDTO cancelEvent(Long eventId, Long organizerId);
+    EventResponseDTO cancelEvent(Long eventId);
 
-    // soft delete — only permitted while the event has no bookings (checked in impl)
-    void deleteEvent(Long eventId, Long organizerId);
+    EventResponseDTO getEventById(Long eventId);
 
-    EventDTO addTicketType(Long eventId, Long organizerId, CreateTicketTypeDTO request);
+    // Public discovery — PUBLISHED events only. Backs both the browse UI and
+    // the AI assistant's search_events(keyword, category) tool.
+    Page<EventResponseDTO> searchPublishedEvents(String keyword, Long categoryId, Pageable pageable);
 
-    // organizer's own management list — includes DRAFT/CANCELLED
-    Page<EventDTO> getMyEvents(Long organizerId, Pageable pageable);
-
-    // attendee-facing discovery — backs the AI assistant's search_events tool; PUBLISHED only
-    Page<EventDTO> searchEvents(String keyword, String category, Pageable pageable);
-
-    // attendee-facing detail lookup — backs the AI assistant's get_event_details tool; PUBLISHED only
-    EventDTO getPublishedEventDetails(Long eventId);
+    // Organizer's own dashboard — all statuses, own events only.
+    Page<EventResponseDTO> getMyEvents(Pageable pageable);
 }

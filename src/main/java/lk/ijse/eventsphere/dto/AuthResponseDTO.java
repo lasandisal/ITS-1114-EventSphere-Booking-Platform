@@ -1,11 +1,12 @@
 package lk.ijse.eventsphere.dto;
 
-import lk.ijse.eventsphere.enums.RoleName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -13,9 +14,15 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class AuthResponseDTO {
+
     private String token;
+
+    @Builder.Default
+    private String tokenType = "Bearer";
+
     private Long userId;
-    private String name;
+    private String fullName;
     private String email;
-    private RoleName role;
+    private List<String> roles;
+    private long expiresInMs;
 }

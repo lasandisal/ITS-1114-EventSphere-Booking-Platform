@@ -3,20 +3,18 @@ package lk.ijse.eventsphere.dto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.math.BigDecimal;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TicketTypeDTO {
+public class OrganizerResponseDTO {
     private Long id;
-    private String name;
-    private BigDecimal price;
-    private int totalQuantity;
-    private int availableQuantity;
+    private Long userId;
+    private String businessName;
+    private String bio;
+    private boolean verified;
 }

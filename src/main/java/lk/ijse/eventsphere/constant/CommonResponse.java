@@ -1,19 +1,34 @@
 package lk.ijse.eventsphere.constant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 
-@Data
-@AllArgsConstructor
+// Uniform success-response envelope — every controller returns
+// CommonResponse<T> so clients (including the AI assistant's tool results)
+// always parse the same { status, message, data } shape. Failures instead go
+// through ErrorResponseDTO via GlobalExceptionHandler — the two are
+// deliberately distinct shapes so a client can branch on HTTP status alone.
+@Getter
+@Setter
 @NoArgsConstructor
-public class CommonResponse {
-    private int status;
-    private Object body;
-    private String message;
+@AllArgsConstructor
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class CommonResponse<T> {
 
-    public CommonResponse(int status, String message) {
-        this.message = message;
-        this.status = status;
+    private int status;
+    private String message;
+    private T data;
+
+    public static <T> CommonResponse<T> of(int status, String message, T data) {
+        return CommonResponse.<T>builder()
+                .status(status)
+                .message(message)
+                .data(data)
+                .build();
     }
 }
