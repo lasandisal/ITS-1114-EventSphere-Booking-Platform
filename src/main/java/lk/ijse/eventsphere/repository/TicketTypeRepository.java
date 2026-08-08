@@ -5,20 +5,26 @@ import lk.ijse.eventsphere.entity.TicketType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.QueryHint;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface TicketTypeRepository extends JpaRepository<TicketType, Long> {
 
-    // shown on the event detail page (ticket tiers + live availability)
     List<TicketType> findByEventId(Long eventId);
 
-    // row-level lock (SELECT ... FOR UPDATE) taken inside the booking transaction so two
-    // concurrent bookings can't both read the same availableQuantity and oversell the
-    // last few seats. Must only be called within a @Transactional service method.
+    // Row-level lock for checkout: call this — never a plain findById — before
+    // reading/decrementing available_quantity. Must run inside a single
+    // @Transactional service method so the lock is held for the whole
+    // read-modify-write, and the transaction should be kept short (this row
+    // is contended under concurrent checkout on popular events).
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT t FROM TicketType t WHERE t.id = :id")
-    Optional<TicketType> findByIdForUpdate(@Param("id") Long id);
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000")})
+    @Query("select t from TicketType t where t.id = :id")
+    Optional<TicketType> lockById(@Param("id") Long id);
 }

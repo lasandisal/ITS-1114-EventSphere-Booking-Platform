@@ -2,18 +2,17 @@ package lk.ijse.eventsphere.repository;
 
 import lk.ijse.eventsphere.entity.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
-    // venue check-in: organizer scans the ticket's QR/barcode, backend looks it up by code
+    // Used by the check-in scan flow, after the HMAC signature on the QR
+    // payload has already been verified locally.
     Optional<Ticket> findByTicketCode(String ticketCode);
 
-    List<Ticket> findByBookingId(Long bookingId);
-
-    // organizer's full attendee list for an event (name/email/seat/status per ticket),
-    // joined through ticketType -> event
-    List<Ticket> findByTicketTypeEventId(Long eventId);
+    List<Ticket> findByBookingItemId(Long bookingItemId);
 }
