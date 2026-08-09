@@ -1,0 +1,58 @@
+### 1. Create a New Venue (Requires Admin Auth)
+POST {{host}}/api/v1/admin/venues
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Nelum Pokuna Theatre",
+  "addressLine": "110 Anagarika Dharmapala Mawatha",
+  "city": "Colombo",
+  "capacity": 1280,
+  "latitude": 6.9113000,
+  "longitude": 79.8647000
+}
+
+### 2. Update an Existing Venue (Requires Admin Auth)
+PUT {{host}}/api/v1/admin/venues/1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Nelum Pokuna Performing Arts Theatre",
+  "addressLine": "110 Anagarika Dharmapala Mawatha",
+  "city": "Colombo 07",
+  "capacity": 1500,
+  "latitude": 6.9113000,
+  "longitude": 79.8647000
+}
+
+### 3. Delete a Venue (Requires Admin Auth)
+DELETE {{host}}/api/v1/admin/venues/1
+Authorization: Bearer {{auth_token}}
+
+
+### 1. Create a New Venue - BMICH (Requires Admin Auth)
+POST {{host}}/api/v1/admin/venues
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Bandaranaike Memorial International Conference Hall (BMICH)",
+  "addressLine": "Bauddhaloka Mawatha",
+  "city": "Colombo 07",
+  "capacity": 2500,
+  "latitude": 6.9012000,
+  "longitude": 79.8735000
+}
+
+### Test Normal User (Should fail with 403 Forbidden)
+POST {{host}}/api/v1/admin/venues
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "name": "Unauthorized Test Venue",
+  "addressLine": "Test Street",
+  "city": "Galle",
+  "capacity": 100
+}

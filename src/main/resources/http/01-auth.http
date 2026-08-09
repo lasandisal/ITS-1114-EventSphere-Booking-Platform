@@ -1,0 +1,43 @@
+### 1. Admin Login (Aiven Cloud Backend)
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{admin_email}}",
+  "password": "{{admin_password}}"
+}
+
+> {%
+    if (response.status === 200 && response.body.data && response.body.data.token) {
+        client.global.set("auth_token", response.body.data.token);
+        client.log("Admin JWT Token captured successfully!");
+    }
+%}
+
+
+### 2. Register New User
+POST {{host}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Lasandi Salwathura",
+  "email": "lasandi@example.com",
+  "password": "Password123!"
+}
+
+
+### 3. Normal User Login
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "lasandi@example.com",
+  "password": "Password123!"
+}
+
+> {%
+    if (response.status === 200 && response.body.data && response.body.data.token) {
+        client.global.set("user_token", response.body.data.token);
+        client.log("Normal User JWT Token captured successfully!");
+    }
+%}

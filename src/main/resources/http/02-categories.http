@@ -1,0 +1,13 @@
+### 1. Get All Categories
+GET {{host}}/api/v1/categories
+Accept: application/json
+
+### 2. Create Category (Requires Admin Auth)
+POST {{host}}/api/v1/categories
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Technology & AI",
+  "slug": "technology-ai"
+}
