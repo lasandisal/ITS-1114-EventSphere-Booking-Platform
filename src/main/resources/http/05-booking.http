@@ -42,7 +42,7 @@ Authorization: Bearer {{user_token}}
 ### =========================================================================
 GET {{host}}/api/v1/bookings/{{booking_id}}
 Accept: application/json
-Authorization: Bearer {{user_token}}
+Authorization: Bearer {{admin_token}}
 
 ###
 

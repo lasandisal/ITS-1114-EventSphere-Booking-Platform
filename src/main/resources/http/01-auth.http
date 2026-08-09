@@ -83,3 +83,20 @@ Content-Type: application/json
         client.log("Organizer JWT Token captured successfully!");
     }
 %}
+
+### Login as Kasun (User / Approved Organizer)
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "kasun@example.com",
+  "password": "Password123!"
+}
+
+> {%
+    if (response.status === 200 && response.body.data && response.body.data.token) {
+        client.global.set("user_token", response.body.data.token);
+        client.global.set("organizer_token", response.body.data.token);
+        client.log("Kasun's JWT Token captured successfully!");
+    }
+%}

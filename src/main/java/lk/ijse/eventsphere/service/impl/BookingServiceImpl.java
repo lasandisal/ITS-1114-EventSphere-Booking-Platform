@@ -128,12 +128,14 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BookingResponseDTO getBookingById(Long bookingId) {
         Booking booking = findOwnedBooking(bookingId);
         return toDto(booking);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<BookingResponseDTO> getMyBookings(Pageable pageable) {
         User user = currentUserProvider.getCurrentUser();
         return bookingRepository.findByUserId(user.getId(), pageable).map(this::toDto);
@@ -206,8 +208,17 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    /*
+    * Standard findById() only loaded the Booking entity,
+    * leaving items unloaded (LAZY).
+    * When toDto() tried to read booking.getItems(),
+    * the DB session was already closed, causing LazyInitializationException.
+    * Using @Transactional(readOnly = true) and JOIN FETCH keeps the session open
+    * and retrieves both Booking and its items in a single, optimized SQL query,
+    * preventing 500 errors and N+1 query overhead.
+    * */
     private Booking findOwnedBooking(Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithItems(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
 
         User user = currentUserProvider.getCurrentUser();
