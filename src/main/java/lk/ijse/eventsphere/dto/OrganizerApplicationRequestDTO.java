@@ -19,4 +19,14 @@ public class OrganizerApplicationRequestDTO {
 
     @Size(max = 2000)
     private String bio;
+
+    // KYC-lite: an identity claim an admin can cross-check manually, not a
+    // verified/vendor-checked document. Deliberately a reference number, not
+    // an uploaded ID photo or biometric scan — see design notes for why.
+    @NotBlank(message = "National ID or passport number is required")
+    @Size(max = 50)
+    private String nicOrPassportNumber;
+
+    @Size(max = 50)
+    private String businessRegistrationNumber;
 }

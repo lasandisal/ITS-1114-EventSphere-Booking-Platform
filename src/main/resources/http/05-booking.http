@@ -1,0 +1,90 @@
+### =========================================================================
+### 1. Create / Hold a Booking (Requires User Auth)
+### =========================================================================
+POST {{host}}/api/v1/bookings
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "eventId": 1,
+  "items": [
+    {
+      "ticketTypeId": 1,
+      "attendees": [
+        {
+          "name": "Jane Doe",
+          "email": "jane@example.com",
+          "seatNumber": "A-12"
+        },
+        {
+          "name": "John Doe",
+          "email": "john@example.com",
+          "seatNumber": "A-13"
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+    client.test("Booking held successfully", function() {
+        client.assert(response.status === 201, "Expected 201 Created but got " + response.status);
+    });
+    if (response.status === 201 && response.body && response.body.data) {
+        client.global.set("booking_id", response.body.data.id);
+    }
+%}
+
+###
+
+### =========================================================================
+### 2. Get Single Booking Details
+### =========================================================================
+GET {{host}}/api/v1/bookings/{{booking_id}}
+Accept: application/json
+Authorization: Bearer {{user_token}}
+
+###
+
+### =========================================================================
+### 3. Get My Bookings List (Paginated)
+### =========================================================================
+GET {{host}}/api/v1/bookings?page=0&size=10
+Accept: application/json
+Authorization: Bearer {{user_token}}
+
+###
+
+### =========================================================================
+### 4. Cancel a Booking
+### =========================================================================
+PATCH {{host}}/api/v1/bookings/{{booking_id}}/cancel
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+### Create Ticket Type for Event #1
+POST {{host}}/api/v1/organizer/events/1/ticket-types
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "name": "General Admission",
+  "price": 1500.00,
+  "totalQuantity": 100,
+  "saleStart": "2026-08-10T09:00:00",
+  "saleEnd": "2026-08-20T18:00:00"
+}
+
+### =========================================================================
+### Publish an Event (As Approved Organizer)
+### =========================================================================
+# Route: PATCH /api/v1/organizer/events/{id}/publish (or /api/v1/organizers/events/{id}/publish)
+PATCH {{host}}/api/v1/organizer/events/1/publish
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+> {%
+    client.test("Event published successfully", function() {
+        client.assert(response.status === 200, "Expected 200 OK but got " + response.status);
+    });
+%}

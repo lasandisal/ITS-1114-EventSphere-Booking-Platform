@@ -16,5 +16,7 @@ public class OrganizerResponseDTO {
     private Long userId;
     private String businessName;
     private String bio;
+    private String nicOrPassportNumber;
+    private String businessRegistrationNumber;
     private boolean verified;
 }

@@ -1,0 +1,104 @@
+### =========================================================================
+### 1. Register New User
+### =========================================================================
+POST {{host}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Kasun Perera",
+  "email": "kasun@example.com",
+  "password": "Password123!",
+  "phone": "0771234567"
+}
+
+###
+
+### =========================================================================
+### 2. Login as New User (Gets {{user_token}})
+### =========================================================================
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "kasun@example.com",
+  "password": "Password123!"
+}
+
+> {%
+    if (response.status === 200 && response.body.data && response.body.data.token) {
+        client.global.set("user_token", response.body.data.token);
+        client.log("User JWT captured!");
+    }
+%}
+
+###
+
+### =========================================================================
+### 3. Submit Organizer Application (KYC-Lite)
+### =========================================================================
+POST {{host}}/api/v1/organizer/apply
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "businessName": "Apex Events Sri Lanka",
+  "bio": "Premier corporate event management and tech summit organizer.",
+  "nicOrPassportNumber": "199812345678",
+  "businessRegistrationNumber": "PV-123456"
+}
+
+> {%
+    if (response.status === 200 || response.status === 201) {
+        // Captures application ID for admin approval
+        client.global.set("organizer_app_id", response.body.data.id);
+        client.log("Organizer application submitted successfully!");
+    }
+%}
+
+###
+
+### =========================================================================
+### 4. Admin Login (Gets {{admin_token}})
+### =========================================================================
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{admin_email}}",
+  "password": "{{admin_password}}"
+}
+
+> {%
+    if (response.status === 200 && response.body.data && response.body.data.token) {
+        client.global.set("admin_token", response.body.data.token);
+        client.log("Admin JWT captured!");
+    }
+%}
+
+###
+
+### =========================================================================
+### 5. Admin Approves Application (Grants ORGANIZER Role)
+### =========================================================================
+PATCH {{host}}/api/v1/admin/organizers/1/verify
+Authorization: Bearer {{admin_token}}
+
+###
+
+### =========================================================================
+### 6. User Re-Logins to Obtain Fresh Token with ORGANIZER Role
+### =========================================================================
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "kasun@example.com",
+  "password": "Password123!"
+}
+
+> {%
+    if (response.status === 200 && response.body.data && response.body.data.token) {
+        client.global.set("organizer_token", response.body.data.token);
+        client.log("Approved Organizer JWT Token captured!");
+    }
+%}

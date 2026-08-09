@@ -32,6 +32,17 @@ public class Organizer {
     @Lob
     private String bio;
 
+    // KYC-lite fields — see OrganizerApplicationRequestDTO for why these are
+    // reference numbers, not uploaded documents or biometric data. Plaintext
+    // storage here is a known limitation worth naming in the report; a
+    // production system would encrypt these at rest or hand off to a real
+    // KYC vendor instead of storing them directly.
+    @Column(name = "nic_or_passport_number", length = 50)
+    private String nicOrPassportNumber;
+
+    @Column(name = "business_registration_number", length = 50)
+    private String businessRegistrationNumber;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean verified = false;

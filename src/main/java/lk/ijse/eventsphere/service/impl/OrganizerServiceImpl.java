@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class OrganizerServiceImpl implements OrganizerService {
@@ -32,20 +34,59 @@ public class OrganizerServiceImpl implements OrganizerService {
         User user = currentUserProvider.getCurrentUser();
 
         if (organizerRepository.findByUserId(user.getId()).isPresent()) {
-            throw new DuplicateResourceException("An organizer profile already exists for this account");
+            throw new DuplicateResourceException(
+                    "An organizer application already exists for this account (pending or approved)");
         }
 
         Organizer organizer = Organizer.builder()
                 .user(user)
                 .businessName(request.getBusinessName())
                 .bio(request.getBio())
-                .verified(false) // admin can verify later; not a login gate
+                .nicOrPassportNumber(request.getNicOrPassportNumber())
+                .businessRegistrationNumber(request.getBusinessRegistrationNumber())
+                .verified(false) // PENDING — the ORGANIZER role is NOT granted until an admin approves
                 .build();
         organizerRepository.save(organizer);
 
-        // Grant ORGANIZER in addition to their existing roles (typically USER) —
-        // a user is never demoted from USER when they become an organizer, since
-        // they can still browse/book as an attendee too.
+        // Deliberately no role grant here — see verifyOrganizer(). Applying
+        // creates a review-queue entry, not organizer access.
+        return toDto(organizer);
+    }
+
+    @Override
+    public OrganizerResponseDTO getMyOrganizerProfile() {
+        User user = currentUserProvider.getCurrentUser();
+        Organizer organizer = organizerRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No organizer application for this account — apply first"));
+        return toDto(organizer);
+    }
+
+    @Override
+    public List<OrganizerResponseDTO> getPendingApplications() {
+        return organizerRepository.findByVerifiedFalse().stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public OrganizerResponseDTO verifyOrganizer(Long organizerId) {
+        Organizer organizer = organizerRepository.findById(organizerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Organizer application not found: " + organizerId));
+
+        if (organizer.isVerified()) {
+            return toDto(organizer); // idempotent — approving twice is a no-op, not an error
+        }
+
+        organizer.setVerified(true);
+        organizerRepository.save(organizer);
+
+        // The ORGANIZER role is granted HERE, on approval — not at
+        // application time. This is the actual access gate; everything
+        // downstream (@PreAuthorize on event/ticket-type endpoints) relies
+        // on this role, not on the verified flag directly.
+        User user = organizer.getUser();
         Role organizerRole = roleRepository.findByName(RoleName.ORGANIZER)
                 .orElseThrow(() -> new IllegalStateException(
                         "ORGANIZER role missing — ensure roles are seeded on startup"));
@@ -56,11 +97,18 @@ public class OrganizerServiceImpl implements OrganizerService {
     }
 
     @Override
-    public OrganizerResponseDTO getMyOrganizerProfile() {
-        User user = currentUserProvider.getCurrentUser();
-        Organizer organizer = organizerRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("No organizer profile for this account"));
-        return toDto(organizer);
+    @Transactional
+    public void rejectOrganizer(Long organizerId) {
+        Organizer organizer = organizerRepository.findById(organizerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Organizer application not found: " + organizerId));
+
+        if (organizer.isVerified()) {
+            throw new IllegalStateException("Cannot reject an already-approved organizer — revoke access instead");
+        }
+
+        // No role was ever granted for a PENDING application, so rejection
+        // is just removing the application record — the user can reapply.
+        organizerRepository.delete(organizer);
     }
 
     private OrganizerResponseDTO toDto(Organizer organizer) {
@@ -69,6 +117,8 @@ public class OrganizerServiceImpl implements OrganizerService {
                 .userId(organizer.getUser().getId())
                 .businessName(organizer.getBusinessName())
                 .bio(organizer.getBio())
+                .nicOrPassportNumber(organizer.getNicOrPassportNumber())
+                .businessRegistrationNumber(organizer.getBusinessRegistrationNumber())
                 .verified(organizer.isVerified())
                 .build();
     }

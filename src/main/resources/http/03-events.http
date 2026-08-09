@@ -1,23 +1,32 @@
-### 1. Get Published Events (Public)
-GET {{host}}/api/v1/events?page=0&size=10
-Accept: application/json
-
-### 2. Create Event (Requires Admin/Organizer Auth)
-POST {{host}}/api/v1/events
+### =========================================================================
+### 1. Create Event (Draft) - Requires Organizer / Admin Auth
+### =========================================================================
+# Route: POST /api/v1/organizer/events
+# Note: Creates event with status DRAFT. Ensure categoryId 1 and venueId 1 exist.
+POST {{host}}/api/v1/organizer/events
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
 {
   "title": "EventSphere Tech Summit 2026",
-  "description": "Advanced REST API Development & Cloud Systems",
+  "description": "Advanced REST API Development & Cloud Systems Conference",
+  "bannerUrl": "https://example.com/banners/tech-summit.jpg",
   "startDatetime": "2026-09-10T09:00:00",
   "endDatetime": "2026-09-10T17:00:00",
   "categoryId": 1,
   "venueId": 1
 }
 
+###
+
 ### =========================================================================
 ### 2. Get All Published Events (Public)
 ### =========================================================================
-GET {{host}}/api/v1/events
-Content-Type: application/json
+# Route: GET /api/v1/events
+# Supports pagination (e.g., page=0&size=10) and filtering parameters.
+GET {{host}}/api/v1/events?page=0&size=10
+Accept: application/json
+
+### Publish Event #1
+PATCH {{host}}/api/v1/organizer/events/1/publish
+Authorization: Bearer {{token}}

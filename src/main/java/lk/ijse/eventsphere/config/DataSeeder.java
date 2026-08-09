@@ -1,9 +1,11 @@
 package lk.ijse.eventsphere.config;
 
+import lk.ijse.eventsphere.entity.Organizer;
 import lk.ijse.eventsphere.entity.Role;
 import lk.ijse.eventsphere.entity.User;
 import lk.ijse.eventsphere.enums.RoleName;
 import lk.ijse.eventsphere.enums.UserStatus;
+import lk.ijse.eventsphere.repository.OrganizerRepository;
 import lk.ijse.eventsphere.repository.RoleRepository;
 import lk.ijse.eventsphere.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
-// Runs once on every startup; inserts the three fixed roles, and one ADMIN
-// account, only if they don't already exist — safe to run repeatedly against
-// the same database (both local and Aiven) without duplicating rows.
 @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
@@ -27,11 +26,9 @@ public class DataSeeder implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final OrganizerRepository organizerRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    // Self-registration only ever grants USER (see AuthServiceImpl), so there
-    // is otherwise no path to an ADMIN account at all. Override these via env
-    // vars — never leave the fallback password in place past first login.
     @Value("${app.admin.email:admin@eventsphere.lk}")
     private String adminEmail;
 
@@ -50,18 +47,27 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         Role adminRole = roleRepository.findByName(RoleName.ADMIN)
-                .orElseThrow(() -> new IllegalStateException("ADMIN role missing after seeding"));
+                .orElseThrow(() -> new IllegalStateException("ADMIN role missing"));
+        Role organizerRole = roleRepository.findByName(RoleName.ORGANIZER)
+                .orElseThrow(() -> new IllegalStateException("ORGANIZER role missing"));
 
         User admin = User.builder()
                 .fullName("EventSphere Admin")
                 .email(adminEmail)
                 .passwordHash(passwordEncoder.encode(adminPassword))
                 .status(UserStatus.ACTIVE)
-                .roles(Set.of(adminRole))
+                .roles(Set.of(adminRole, organizerRole))
                 .build();
         userRepository.save(admin);
 
-        log.warn("Seeded default admin account ({}) with the configured/fallback password — " +
-                "log in and change it, or set app.admin.email / app.admin.password before first run.", adminEmail);
+        Organizer adminOrganizer = Organizer.builder()
+                .user(admin)
+                .businessName("EventSphere HQ")
+                .bio("System Administration Event Operations") // Changed description to bio
+                .verified(true) // Admin organizer account is verified by default
+                .build();
+        organizerRepository.save(adminOrganizer);
+
+        log.info("Seeded default admin account ({}) with ORGANIZER profile.", adminEmail);
     }
 }

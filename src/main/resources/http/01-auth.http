@@ -41,3 +41,45 @@ Content-Type: application/json
         client.log("Normal User JWT Token captured successfully!");
     }
 %}
+
+### =========================================================================
+### 4. Apply / Register as an Organizer (Requires User Token)
+### =========================================================================
+# Route: POST /api/v1/organizer/apply (or /api/v1/organizers/apply)
+# Converts/links the logged-in user account to an Organizer profile
+POST {{host}}/api/v1/organizers/apply
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "businessName": "Lasandi Events & Tech",
+  "bio": "Specialized in organizing tech conferences and software workshops."
+}
+
+> {%
+    client.test("Organizer profile created/applied", function() {
+        client.assert(response.status === 200 || response.status === 201, "Failed to apply as organizer");
+    });
+%}
+
+###
+
+### =========================================================================
+### 5. Organizer Login
+### =========================================================================
+# Route: POST /api/v1/auth/login
+# Logging in with the organizer's credentials returns the updated JWT with ORGANIZER role
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "lasandi@example.com",
+  "password": "Password123!"
+}
+
+> {%
+    if (response.status === 200 && response.body.data && response.body.data.token) {
+        client.global.set("organizer_token", response.body.data.token);
+        client.log("Organizer JWT Token captured successfully!");
+    }
+%}
