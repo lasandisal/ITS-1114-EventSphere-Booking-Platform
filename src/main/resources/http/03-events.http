@@ -15,3 +15,9 @@ Authorization: Bearer {{auth_token}}
   "categoryId": 1,
   "venueId": 1
 }
+
+### =========================================================================
+### 2. Get All Published Events (Public)
+### =========================================================================
+GET {{host}}/api/v1/events
+Content-Type: application/json

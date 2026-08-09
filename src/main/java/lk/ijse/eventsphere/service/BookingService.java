@@ -24,4 +24,9 @@ public interface BookingService {
     // Called by the scheduled expiry job — releases inventory for every
     // PENDING booking whose hold has lapsed.
     void expireStaleBookings();
+
+    // Called from the PayHere webhook handler when a payment fails/is
+    // cancelled/is charged back — releases inventory immediately rather than
+    // waiting out the remainder of the hold TTL.
+    void releaseFailedPaymentBooking(Long bookingId);
 }

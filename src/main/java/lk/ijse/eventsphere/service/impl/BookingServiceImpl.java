@@ -172,6 +172,25 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    @Override
+    @Transactional
+    public void releaseFailedPaymentBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
+
+        // Idempotent — a duplicate/late webhook re-delivering the same
+        // failure must not double-release inventory that a prior delivery
+        // (or the expiry job) already returned to the pool.
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            return;
+        }
+
+        releaseInventory(booking);
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+        log.info("Released inventory for booking {} after payment failure", booking.getBookingReference());
+    }
+
     // ==================== helpers ====================
 
     // Shared by manual cancel and the expiry job — re-locks each ticket type
