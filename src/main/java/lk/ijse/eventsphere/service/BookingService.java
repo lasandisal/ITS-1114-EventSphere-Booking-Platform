@@ -1,0 +1,27 @@
+package lk.ijse.eventsphere.service;
+
+import lk.ijse.eventsphere.dto.BookingCreateRequestDTO;
+import lk.ijse.eventsphere.dto.BookingResponseDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+public interface BookingService {
+
+    // Phase 1 of the 2-phase flow: locks inventory, creates a PENDING
+    // booking with an expiry hold. Payment confirmation (phase 2) is a
+    // separate service that transitions PENDING -> CONFIRMED.
+    BookingResponseDTO createBooking(BookingCreateRequestDTO request);
+
+    BookingResponseDTO getBookingById(Long bookingId);
+
+    // Backs the AI assistant's get_my_bookings() tool and the booking
+    // history screen.
+    Page<BookingResponseDTO> getMyBookings(Pageable pageable);
+
+    // User-initiated early release of a PENDING hold (doesn't wait for TTL).
+    BookingResponseDTO cancelBooking(Long bookingId);
+
+    // Called by the scheduled expiry job — releases inventory for every
+    // PENDING booking whose hold has lapsed.
+    void expireStaleBookings();
+}
