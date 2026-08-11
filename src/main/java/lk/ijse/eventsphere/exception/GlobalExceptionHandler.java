@@ -43,6 +43,18 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
     }
 
+    @ExceptionHandler(InvalidTicketException.class)
+    public ResponseEntity<ErrorResponseDTO> handleInvalidTicket(
+            InvalidTicketException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(TicketAlreadyUsedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleTicketAlreadyUsed(
+            TicketAlreadyUsedException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidation(
             MethodArgumentNotValidException ex, HttpServletRequest request) {
