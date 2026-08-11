@@ -31,7 +31,7 @@ public class PaymentLog {
     private Payment payment;
 
     @Lob
-    @Column(name = "raw_payload", nullable = false, columnDefinition = "JSON")
+    @Column(name = "raw_payload", columnDefinition = "LONGTEXT")
     private String rawPayload;
 
     @Column(name = "status_code", length = 10)

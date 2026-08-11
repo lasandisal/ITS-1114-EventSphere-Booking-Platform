@@ -89,7 +89,7 @@ POST {{host}}/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "kasun@example.com",
+  "email": "selinercel156@gmail.com",
   "password": "Password123!"
 }
 

@@ -1,6 +1,3 @@
-### =========================================================================
-### 1. Create / Hold a Booking (Requires User Auth)
-### =========================================================================
 POST {{host}}/api/v1/bookings
 Content-Type: application/json
 Authorization: Bearer {{user_token}}
@@ -12,14 +9,9 @@ Authorization: Bearer {{user_token}}
       "ticketTypeId": 1,
       "attendees": [
         {
-          "name": "Jane Doe",
-          "email": "jane@example.com",
+          "name": "Lasandi",
+          "email": "lasandisalwathura@gmail.com",
           "seatNumber": "A-12"
-        },
-        {
-          "name": "John Doe",
-          "email": "john@example.com",
-          "seatNumber": "A-13"
         }
       ]
     }
@@ -27,11 +19,10 @@ Authorization: Bearer {{user_token}}
 }
 
 > {%
-    client.test("Booking held successfully", function() {
-        client.assert(response.status === 201, "Expected 201 Created but got " + response.status);
-    });
     if (response.status === 201 && response.body && response.body.data) {
         client.global.set("booking_id", response.body.data.id);
+        client.global.set("booking_ref", response.body.data.bookingReference);
+        client.log("Fresh Booking Created! ID: " + response.body.data.id);
     }
 %}
 

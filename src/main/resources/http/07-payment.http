@@ -1,0 +1,51 @@
+### =========================================================================
+### 1. Initiate Payment Checkout (Requires User Auth)
+### =========================================================================
+# Route: POST /api/v1/payments/initiate/{bookingId}
+POST {{host}}/api/v1/payments/initiate/{{booking_id}}
+Accept: application/json
+Authorization: Bearer {{user_token}}
+
+> {%
+    if (response.status === 200 && response.body && response.body.data) {
+        client.global.set("order_id", response.body.data.orderId);
+        client.global.set("merchant_id", response.body.data.merchantId);
+        client.global.set("amount", response.body.data.amount);
+        client.global.set("currency", response.body.data.currency);
+        client.log("Captured Order ID (UUID): " + response.body.data.orderId);
+    }
+%}
+
+###
+
+### =========================================================================
+### 2. PayHere Webhook Notification — Payment SUCCESS (2 = Paid)
+### =========================================================================
+# Route: POST /api/v1/payments/notify (Public permitAll route)
+POST {{host}}/api/v1/payments/notify
+Content-Type: application/x-www-form-urlencoded
+
+merchant_id={{merchant_id}}&order_id={{order_id}}&payment_id=320001234&payhere_amount={{amount}}&payhere_currency={{currency}}&status_code=2&md5sig=PLACEHOLDER_MD5_HASH
+
+> {%
+    client.test("PayHere success notification processed", function() {
+        client.assert(response.status === 200, "Expected 200 OK but got " + response.status);
+    });
+%}
+
+###
+
+### =========================================================================
+### 3. PayHere Webhook Notification — Payment FAILED / CANCELLED (-1)
+### =========================================================================
+# Route: POST /api/v1/payments/notify (Public permitAll route)
+POST {{host}}/api/v1/payments/notify
+Content-Type: application/x-www-form-urlencoded
+
+merchant_id={{merchant_id}}&order_id={{order_id}}&payment_id=320001235&payhere_amount={{amount}}&payhere_currency={{currency}}&status_code=-1&md5sig=PLACEHOLDER_MD5_HASH
+
+> {%
+    client.test("PayHere failure notification processed", function() {
+        client.assert(response.status === 200, "Expected 200 OK but got " + response.status);
+    });
+%}
