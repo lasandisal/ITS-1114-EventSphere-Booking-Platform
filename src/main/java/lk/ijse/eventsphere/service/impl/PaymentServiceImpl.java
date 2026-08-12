@@ -74,12 +74,11 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalStateException("This booking's hold has expired — please book again");
         }
 
-//        String formattedAmount = String.format("%.2f", booking.getTotalAmount());
         String formattedAmount = String.format(java.util.Locale.US, "%.2f", booking.getTotalAmount());
 
-        // Reuse the existing Payment row on a retry (e.g. user reloads the
-        // checkout page) instead of violating the payments.booking_id unique
-        // constraint with a second insert.
+        // Format a clean merchant order ID for PayHere
+        String orderId = "ES-" + booking.getId();
+
         Payment payment = paymentRepository.findByBookingId(bookingId).orElse(null);
         if (payment != null && payment.getStatus() == PaymentStatus.SUCCESS) {
             throw new IllegalStateException("This booking has already been paid for");
@@ -88,7 +87,7 @@ public class PaymentServiceImpl implements PaymentService {
             payment = Payment.builder()
                     .booking(booking)
                     .provider("PAYHERE")
-                    .merchantOrderId(booking.getBookingReference())
+                    .merchantOrderId(orderId)
                     .amount(booking.getTotalAmount())
                     .currency(currency)
                     .status(PaymentStatus.PENDING)

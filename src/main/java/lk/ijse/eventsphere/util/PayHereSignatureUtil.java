@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 @Component
 public class PayHereSignatureUtil {
@@ -18,12 +17,10 @@ public class PayHereSignatureUtil {
     private String merchantSecret;
 
     public String generateCheckoutHash(String merchantId, String orderId, String formattedAmount, String currency) {
-        String cleanSecret = getRawSecret(merchantSecret);
+        // 1. Hash plain merchantSecret directly to MD5 Uppercase
+        String secretHash = md5Hex(merchantSecret.trim()).toUpperCase();
 
-        // 1. Convert secret to MD5 Uppercase
-        String secretHash = md5Hex(cleanSecret).toUpperCase();
-
-        // 2. Concatenate parameters
+        // 2. Concatenate parameters: merchant_id + order_id + amount + currency + secretHash
         String raw = merchantId + orderId + formattedAmount + currency + secretHash;
 
         // 3. Final Checkout Hash
@@ -36,25 +33,11 @@ public class PayHereSignatureUtil {
     }
 
     public String generateNotifySignature(String merchantId, String orderId, String amount, String currency, String statusCode) {
-        String cleanSecret = getRawSecret(merchantSecret);
-        String secretHash = md5Hex(cleanSecret).toUpperCase();
+        String secretHash = md5Hex(merchantSecret.trim()).toUpperCase();
         String raw = merchantId + orderId + amount + currency + statusCode + secretHash;
         return md5Hex(raw).toUpperCase();
     }
 
-    private String getRawSecret(String secret) {
-        if (secret == null) return "";
-        String trimmed = secret.trim();
-        try {
-            byte[] decoded = Base64.getDecoder().decode(trimmed);
-            String decodedStr = new String(decoded, StandardCharsets.UTF_8);
-            return decodedStr.isEmpty() ? trimmed : decodedStr;
-        } catch (Exception e) {
-            return trimmed;
-        }
-    }
-
-    // --- Helper Method ---
     private String md5Hex(String input) {
         return DigestUtils.md5DigestAsHex(input.getBytes(StandardCharsets.UTF_8));
     }
