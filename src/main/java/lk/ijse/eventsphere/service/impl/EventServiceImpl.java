@@ -122,17 +122,31 @@ public class EventServiceImpl implements EventService {
         return toDto(event, mapTicketTypes(eventId));
     }
 
+//    @Override
+//    public Page<EventResponseDTO> searchPublishedEvents(String keyword, Long categoryId, Pageable pageable) {
+//        Page<Event> page;
+//        if (StringUtils.hasText(keyword)) {
+//            page = eventRepository.findByStatusAndTitleContainingIgnoreCase(EventStatus.PUBLISHED, keyword, pageable);
+//        } else if (categoryId != null) {
+//            page = eventRepository.findByStatusAndCategory_Id(EventStatus.PUBLISHED, categoryId, pageable);
+//        } else {
+//            page = eventRepository.findByStatus(EventStatus.PUBLISHED, pageable);
+//        }
+//        return page.map(event -> toDto(event, mapTicketTypes(event.getId())));
+//    }
+
     @Override
     public Page<EventResponseDTO> searchPublishedEvents(String keyword, Long categoryId, Pageable pageable) {
-        Page<Event> page;
-        if (StringUtils.hasText(keyword)) {
-            page = eventRepository.findByStatusAndTitleContainingIgnoreCase(EventStatus.PUBLISHED, keyword, pageable);
-        } else if (categoryId != null) {
-            page = eventRepository.findByStatusAndCategory_Id(EventStatus.PUBLISHED, categoryId, pageable);
-        } else {
-            page = eventRepository.findByStatus(EventStatus.PUBLISHED, pageable);
-        }
-        return page.map(event -> toDto(event, mapTicketTypes(event.getId())));
+        String sanitizedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+
+        Page<Event> eventPage = eventRepository.searchPublishedEvents(
+                EventStatus.PUBLISHED,
+                sanitizedKeyword,
+                categoryId,
+                pageable
+        );
+
+        return eventPage.map(event -> toDto(event, mapTicketTypes(event.getId())));
     }
 
     @Override
