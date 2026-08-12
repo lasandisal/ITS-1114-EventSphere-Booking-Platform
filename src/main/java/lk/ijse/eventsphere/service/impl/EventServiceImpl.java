@@ -116,25 +116,15 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public EventResponseDTO getEventById(Long eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found: " + eventId));
         return toDto(event, mapTicketTypes(eventId));
     }
 
-//    @Override
-//    public Page<EventResponseDTO> searchPublishedEvents(String keyword, Long categoryId, Pageable pageable) {
-//        Page<Event> page;
-//        if (StringUtils.hasText(keyword)) {
-//            page = eventRepository.findByStatusAndTitleContainingIgnoreCase(EventStatus.PUBLISHED, keyword, pageable);
-//        } else if (categoryId != null) {
-//            page = eventRepository.findByStatusAndCategory_Id(EventStatus.PUBLISHED, categoryId, pageable);
-//        } else {
-//            page = eventRepository.findByStatus(EventStatus.PUBLISHED, pageable);
-//        }
-//        return page.map(event -> toDto(event, mapTicketTypes(event.getId())));
-//    }
 
+    @Transactional(readOnly = true)
     @Override
     public Page<EventResponseDTO> searchPublishedEvents(String keyword, Long categoryId, Pageable pageable) {
         String sanitizedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;

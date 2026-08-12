@@ -74,7 +74,8 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalStateException("This booking's hold has expired — please book again");
         }
 
-        String formattedAmount = String.format("%.2f", booking.getTotalAmount());
+//        String formattedAmount = String.format("%.2f", booking.getTotalAmount());
+        String formattedAmount = String.format(java.util.Locale.US, "%.2f", booking.getTotalAmount());
 
         // Reuse the existing Payment row on a retry (e.g. user reloads the
         // checkout page) instead of violating the payments.booking_id unique
