@@ -64,6 +64,7 @@ public class SecurityConfig {
                         // (see InvalidPaymentException / payment service), not Spring
                         // Security. Never move this behind .authenticated().
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/notify").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/payments/test-checkout").permitAll()
 
                         // Role-scoped areas.
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")

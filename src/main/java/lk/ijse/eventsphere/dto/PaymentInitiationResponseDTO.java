@@ -31,4 +31,5 @@ public class PaymentInitiationResponseDTO {
     private String address;
     private String city;
     private String country;
+    private String actionUrl;
 }

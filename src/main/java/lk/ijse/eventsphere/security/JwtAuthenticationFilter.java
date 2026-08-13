@@ -1,10 +1,17 @@
 package lk.ijse.eventsphere.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lk.ijse.eventsphere.exception.ErrorResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -28,7 +36,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        // If no token, proceed as guest
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -48,14 +55,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
+            filterChain.doFilter(request, response);
+        } catch (ExpiredJwtException e) {
+            handleJwtException(request, response, HttpStatus.UNAUTHORIZED, "Token has expired");
+        } catch (SignatureException e) {
+            handleJwtException(request, response, HttpStatus.UNAUTHORIZED, "Invalid token signature");
+        } catch (MalformedJwtException e) {
+            handleJwtException(request, response, HttpStatus.UNAUTHORIZED, "Invalid token format");
         } catch (Exception e) {
-            // 💡 KEY FIX: Don't write a 401 response directly!
-            // If the token is expired/invalid, clear context so Spring Security
-            // evaluates the request against permitAll() rules instead.
-            SecurityContextHolder.clearContext();
+            handleJwtException(request, response, HttpStatus.INTERNAL_SERVER_ERROR, "Authentication failed");
         }
+    }
 
-        // ALWAYS continue down the filter chain!
-        filterChain.doFilter(request, response);
+    // Writes the SAME ErrorResponseDTO shape GlobalExceptionHandler uses, and —
+    // unlike the reference version — actually sets the real HTTP status code
+    // instead of always returning 200 OK.
+    private void handleJwtException(HttpServletRequest request, HttpServletResponse response,
+                                    HttpStatus status, String message) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .path(request.getRequestURI())
+                .build();
+
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }

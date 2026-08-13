@@ -22,12 +22,13 @@ public class GeminiApiClient {
     private final String apiKey;
 
     public GeminiApiClient(@Value("${app.gemini.api-key}") String apiKey,
-                           @Value("${app.gemini.model:gemini-3.6-flash}") String model) {
+                           @Value("${app.gemini.model:gemini-3.6-flash}") String model,
+                           @Value("${app.gemini.base-url:https://generativelanguage.googleapis.com}") String baseUrl) {
         // Strip "models/" prefix if present to ensure proper URL format
         this.model = model.startsWith("models/") ? model.substring(7) : model;
         this.apiKey = apiKey;
         this.restClient = RestClient.builder()
-                .baseUrl("https://generativelanguage.googleapis.com")
+                .baseUrl(baseUrl)
                 .defaultHeader("Content-Type", "application/json")
                 .build();
     }

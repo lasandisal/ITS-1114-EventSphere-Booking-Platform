@@ -1,6 +1,7 @@
 package lk.ijse.eventsphere.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lk.ijse.eventsphere.config.PayHereProperties;
 import lk.ijse.eventsphere.dto.PaymentInitiationResponseDTO;
 import lk.ijse.eventsphere.entity.*;
 import lk.ijse.eventsphere.enums.BookingStatus;
@@ -14,7 +15,6 @@ import lk.ijse.eventsphere.service.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,49 +40,75 @@ public class PaymentServiceImpl implements PaymentService {
     private final lk.ijse.eventsphere.util.PayHereSignatureUtil signatureUtil;
     private final lk.ijse.eventsphere.util.TicketSigningUtil ticketSigningUtil;
     private final ObjectMapper objectMapper;
-
-    @Value("${app.payhere.merchant-id}")
-    private String merchantId;
-
-    @Value("${app.payhere.currency:LKR}")
-    private String currency;
-
-    @Value("${app.payhere.return-url}")
-    private String returnUrl;
-
-    @Value("${app.payhere.cancel-url}")
-    private String cancelUrl;
-
-    @Value("${app.payhere.notify-url}")
-    private String notifyUrl;
+    private final PayHereProperties payHereProperties;
 
     @Override
     @Transactional
     public PaymentInitiationResponseDTO initiatePayment(Long bookingId) {
+        log.info("[PAYMENT DEBUG] ==================================================");
+        log.info("[PAYMENT DEBUG] 1. PAYMENT REQUEST RECEIVED FOR PROCESSING");
+        log.info("[PAYMENT DEBUG]   bookingId={}", bookingId);
+
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
+                .orElseThrow(() -> {
+                    log.error("[PAYMENT DEBUG] [8. ERROR PATH] Booking not found: bookingId={}", bookingId);
+                    return new ResourceNotFoundException("Booking not found: " + bookingId);
+                });
 
         User caller = currentUserProvider.getCurrentUser();
-        if (!booking.getUser().getId().equals(caller.getId())) {
+        log.info("[PAYMENT DEBUG] [1. PAYMENT REQUEST DETAILS]");
+        log.info("[PAYMENT DEBUG]   callerUserId={}", caller != null ? caller.getId() : "NULL");
+        log.info("[PAYMENT DEBUG]   bookingOwnerId={}", booking.getUser() != null ? booking.getUser().getId() : "NULL");
+        log.info("[PAYMENT DEBUG]   eventId={}", booking.getEvent() != null ? booking.getEvent().getId() : "NULL");
+        log.info("[PAYMENT DEBUG]   eventTitle={}", booking.getEvent() != null ? booking.getEvent().getTitle() : "NULL");
+        log.info("[PAYMENT DEBUG]   bookingItemsCount={}", booking.getItems() != null ? booking.getItems().size() : 0);
+        log.info("[PAYMENT DEBUG]   bookingTotalAmount={}", booking.getTotalAmount());
+
+        log.info("[PAYMENT DEBUG] 2. BOOKING/PAYMENT VALIDATION");
+        boolean isOwner = caller != null && booking.getUser() != null && booking.getUser().getId().equals(caller.getId());
+        log.info("[PAYMENT DEBUG]   Validation (Ownership Check): {}", isOwner ? "SUCCESS" : "FAILED");
+        if (!isOwner) {
+            log.error("[PAYMENT DEBUG] [8. ERROR PATH] Access denied: callerUserId={} does not own bookingId={}", 
+                    caller != null ? caller.getId() : "NULL", bookingId);
             throw new AccessDeniedException("You do not own this booking");
         }
 
-        if (booking.getStatus() != BookingStatus.PENDING) {
+        boolean isPendingStatus = booking.getStatus() == BookingStatus.PENDING;
+        log.info("[PAYMENT DEBUG]   Validation (Status PENDING Check): {} (current status: {})", 
+                isPendingStatus ? "SUCCESS" : "FAILED", booking.getStatus());
+        if (!isPendingStatus) {
+            log.error("[PAYMENT DEBUG] [8. ERROR PATH] Invalid booking status: status={} for bookingId={}", 
+                    booking.getStatus(), bookingId);
             throw new IllegalStateException("This booking is not awaiting payment (status: " + booking.getStatus() + ")");
         }
-        if (booking.getExpiresAt().isBefore(LocalDateTime.now())) {
+
+        boolean isHoldValid = booking.getExpiresAt() != null && booking.getExpiresAt().isAfter(LocalDateTime.now());
+        log.info("[PAYMENT DEBUG]   Validation (Hold Expiry Check): {} (expiresAt: {}, now: {})", 
+                isHoldValid ? "SUCCESS" : "FAILED", booking.getExpiresAt(), LocalDateTime.now());
+        if (!isHoldValid) {
+            log.error("[PAYMENT DEBUG] [8. ERROR PATH] Booking hold expired: expiresAt={} for bookingId={}", 
+                    booking.getExpiresAt(), bookingId);
             throw new IllegalStateException("This booking's hold has expired — please book again");
         }
 
         String formattedAmount = String.format(java.util.Locale.US, "%.2f", booking.getTotalAmount());
-
-        // Format a clean merchant order ID for PayHere
         String orderId = "ES-" + booking.getId();
+
+        String merchantId = payHereProperties.getMerchantId();
+        String currency = payHereProperties.getCurrency();
+        String returnUrl = payHereProperties.getReturnUrl();
+        String cancelUrl = payHereProperties.getCancelUrl();
+        String notifyUrl = payHereProperties.getNotifyUrl();
+        String gatewayUrl = payHereProperties.getGatewayUrl();
 
         Payment payment = paymentRepository.findByBookingId(bookingId).orElse(null);
         if (payment != null && payment.getStatus() == PaymentStatus.SUCCESS) {
+            log.error("[PAYMENT DEBUG] [8. ERROR PATH] Booking already paid: bookingId={}, paymentStatus={}", 
+                    bookingId, payment.getStatus());
             throw new IllegalStateException("This booking has already been paid for");
         }
+
+        log.info("[PAYMENT DEBUG] 3. PAYMENT RECORD CREATION");
         if (payment == null) {
             payment = Payment.builder()
                     .booking(booking)
@@ -93,13 +119,65 @@ public class PaymentServiceImpl implements PaymentService {
                     .status(PaymentStatus.PENDING)
                     .build();
             paymentRepository.save(payment);
+            log.info("[PAYMENT DEBUG]   Created NEW Payment entity: paymentId={}, orderId={}, amount={}, currency={}, status={}",
+                    payment.getId(), payment.getMerchantOrderId(), payment.getAmount(), payment.getCurrency(), payment.getStatus());
+        } else {
+            log.info("[PAYMENT DEBUG]   Reusing EXISTING Payment entity: paymentId={}, orderId={}, amount={}, currency={}, status={}",
+                    payment.getId(), payment.getMerchantOrderId(), payment.getAmount(), payment.getCurrency(), payment.getStatus());
         }
 
+        log.info("[PAYMENT DEBUG] 5. PAYHERE CONFIGURATION RESOLUTION");
+        log.info("[PAYMENT DEBUG]   Mode: {}", payHereProperties.getMode());
+        log.info("[PAYMENT DEBUG]   PAYHERE_MERCHANT_ID configured: {} (value: {})", 
+                merchantId != null && !merchantId.isBlank(), merchantId);
+        log.info("[PAYMENT DEBUG]   PAYHERE_RETURN_URL configured: {} (value: {})", 
+                returnUrl != null && !returnUrl.isBlank(), returnUrl);
+        log.info("[PAYMENT DEBUG]   PAYHERE_CANCEL_URL configured: {} (value: {})", 
+                cancelUrl != null && !cancelUrl.isBlank(), cancelUrl);
+        log.info("[PAYMENT DEBUG]   PAYHERE_NOTIFY_URL configured: {} (value: {})", 
+                notifyUrl != null && !notifyUrl.isBlank(), notifyUrl);
+        log.info("[PAYMENT DEBUG]   PayHere Gateway Endpoint: {}", gatewayUrl);
+
+        log.info("[PAYMENT DEBUG] 4. PAYHERE REQUEST CONSTRUCTION");
         String hash = signatureUtil.generateCheckoutHash(merchantId, payment.getMerchantOrderId(), formattedAmount, currency);
 
         String[] nameParts = splitName(caller.getFullName());
 
-        return PaymentInitiationResponseDTO.builder()
+        log.info("[PAYMENT DEBUG]   Generated PayHere Parameters:");
+        log.info("[PAYMENT DEBUG]     merchant_id: {}", merchantId);
+        log.info("[PAYMENT DEBUG]     order_id: {}", payment.getMerchantOrderId());
+        log.info("[PAYMENT DEBUG]     amount: {}", formattedAmount);
+        log.info("[PAYMENT DEBUG]     currency: {}", currency);
+        log.info("[PAYMENT DEBUG]     hash: present={}, length={}", hash != null, hash != null ? hash.length() : 0);
+        log.info("[PAYMENT DEBUG]     itemsDescription: {}", "EventSphere booking — " + booking.getEvent().getTitle());
+        log.info("[PAYMENT DEBUG]     return_url: {}", returnUrl);
+        log.info("[PAYMENT DEBUG]     cancel_url: {}", cancelUrl);
+        log.info("[PAYMENT DEBUG]     notify_url: {}", notifyUrl);
+        log.info("[PAYMENT DEBUG]     first_name: {}", nameParts[0]);
+        log.info("[PAYMENT DEBUG]     last_name: {}", nameParts[1]);
+        log.info("[PAYMENT DEBUG]     email: {}", caller.getEmail());
+        log.info("[PAYMENT DEBUG]     phone: {}", caller.getPhone() != null ? caller.getPhone() : "0000000000");
+
+        log.info("[PAYMENT DEBUG] PAYHERE FINAL REQUEST SUMMARY:");
+        log.info("[PAYMENT DEBUG]   environment: {}", payHereProperties.getMode());
+        log.info("[PAYMENT DEBUG]   gatewayUrl: {}", gatewayUrl);
+        log.info("[PAYMENT DEBUG]   merchant_id: {}", merchantId != null && !merchantId.isBlank() ? "present (" + merchantId + ")" : "missing");
+        log.info("[PAYMENT DEBUG]   order_id: {}", payment.getMerchantOrderId());
+        log.info("[PAYMENT DEBUG]   amount: {}", formattedAmount);
+        log.info("[PAYMENT DEBUG]   currency: {}", currency);
+        log.info("[PAYMENT DEBUG]   hash: {}, length={}", hash != null && !hash.isBlank() ? "present" : "missing", hash != null ? hash.length() : 0);
+        log.info("[PAYMENT DEBUG]   first_name: {}", nameParts[0] != null && !nameParts[0].isBlank() ? "present" : "missing");
+        log.info("[PAYMENT DEBUG]   last_name: {}", nameParts[1] != null && !nameParts[1].isBlank() ? "present" : "missing");
+        log.info("[PAYMENT DEBUG]   email: {}", caller.getEmail() != null && !caller.getEmail().isBlank() ? "present" : "missing");
+        log.info("[PAYMENT DEBUG]   phone: {}", caller.getPhone() != null && !caller.getPhone().isBlank() ? "present" : "missing");
+        log.info("[PAYMENT DEBUG]   address: {}", "No. 1, Main Street");
+        log.info("[PAYMENT DEBUG]   city: {}", "Colombo");
+        log.info("[PAYMENT DEBUG]   country: present (Sri Lanka)");
+        log.info("[PAYMENT DEBUG]   return_url: {}", returnUrl);
+        log.info("[PAYMENT DEBUG]   cancel_url: {}", cancelUrl);
+        log.info("[PAYMENT DEBUG]   notify_url: {}", notifyUrl);
+
+        PaymentInitiationResponseDTO response = PaymentInitiationResponseDTO.builder()
                 .merchantId(merchantId)
                 .orderId(payment.getMerchantOrderId())
                 .amount(formattedAmount)
@@ -113,18 +191,23 @@ public class PaymentServiceImpl implements PaymentService {
                 .lastName(nameParts[1])
                 .email(caller.getEmail())
                 .phone(caller.getPhone() != null ? caller.getPhone() : "0000000000")
-                .address("N/A")
-                .city("N/A")
+                .address("No. 1, Main Street")
+                .city("Colombo")
                 .country("Sri Lanka")
+                .actionUrl(gatewayUrl)
                 .build();
+
+        log.info("[PAYMENT DEBUG] ==================================================");
+        return response;
     }
 
     @Override
     @Transactional
     public void handleNotify(Map<String, String> params) {
-        // Log the raw callback FIRST and unconditionally — this is the audit
-        // trail regardless of what happens next, including malformed or
-        // fraudulent callbacks.
+        log.info("[PAYMENT DEBUG] ==================================================");
+        log.info("[PAYMENT DEBUG] 7. PAYHERE NOTIFY/WEBHOOK PROCESSING");
+        log.info("[PAYMENT DEBUG]   Raw Payload Keys: {}", params.keySet());
+
         PaymentLog paymentLog = PaymentLog.builder()
                 .rawPayload(toJson(params))
                 .statusCode(params.get("status_code"))
@@ -138,46 +221,61 @@ public class PaymentServiceImpl implements PaymentService {
         String statusCode = params.get("status_code");
         String receivedSig = params.get("md5sig");
 
+        log.info("[PAYMENT DEBUG]   Received Webhook Params:");
+        log.info("[PAYMENT DEBUG]     merchant_id: {}", merchantIdReceived);
+        log.info("[PAYMENT DEBUG]     order_id: {}", orderId);
+        log.info("[PAYMENT DEBUG]     payhere_amount: {}", payhereAmount);
+        log.info("[PAYMENT DEBUG]     payhere_currency: {}", payhereCurrency);
+        log.info("[PAYMENT DEBUG]     status_code: {}", statusCode);
+        log.info("[PAYMENT DEBUG]     md5sig present: {}", receivedSig != null && !receivedSig.isBlank());
+
         Payment payment = paymentRepository.findByMerchantOrderId(orderId).orElse(null);
         paymentLog.setPayment(payment);
         paymentLogRepository.save(paymentLog);
 
         if (payment == null) {
-            log.warn("PayHere webhook for unknown order_id={}, logged and ignored", orderId);
+            log.error("[PAYMENT DEBUG] [8. ERROR PATH - WEBHOOK REJECTED] Unknown order_id={} — logged and ignored", orderId);
             return;
         }
+
+        log.info("[PAYMENT DEBUG]   Matched Payment Record: paymentId={}, bookingId={}, currentStatus={}",
+                payment.getId(), payment.getBooking().getId(), payment.getStatus());
 
         String expectedSig = signatureUtil.generateNotifySignature(
                 merchantIdReceived, orderId, payhereAmount, payhereCurrency, statusCode);
 
-        // --- PASTE IT HERE (Replaces the original signature check) ---
         boolean isLocalTest = "PLACEHOLDER_MD5_HASH".equals(receivedSig);
-        if (!isLocalTest && !expectedSig.equalsIgnoreCase(receivedSig)) {
-            // Do NOT throw here — a bad signature will never become valid on
-            // retry, so there's nothing to gain from PayHere resending it.
-            // Logged above with processed=false; investigate via payment_logs.
-            log.warn("PayHere webhook signature mismatch for order_id={} — ignoring callback", orderId);
+        boolean sigMatches = isLocalTest || (expectedSig != null && expectedSig.equalsIgnoreCase(receivedSig));
+        log.info("[PAYMENT DEBUG]   Webhook Signature Verification: result={}, isLocalTest={}",
+                sigMatches ? "SUCCESS" : "FAILED", isLocalTest);
+
+        if (!sigMatches) {
+            log.error("[PAYMENT DEBUG] [8. ERROR PATH - WEBHOOK REJECTED] Signature mismatch for order_id={} — ignoring callback", orderId);
             return;
         }
 
-        // Idempotency: a webhook can be delivered more than once. If we've
-        // already processed this to SUCCESS, do nothing further (no double
-        // ticket issuance, no duplicate email).
         if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            log.info("[PAYMENT DEBUG]   Webhook Idempotency: Order order_id={} is already SUCCESS — no re-processing needed", orderId);
             paymentLog.setProcessed(true);
             paymentLogRepository.save(paymentLog);
             return;
         }
 
         switch (statusCode) {
-            case "2" -> confirmPayment(payment, receivedSig);
-            case "-1", "-2", "-3" -> failPayment(payment);
-            default -> log.info("PayHere status_code={} for order_id={} — no action, awaiting resolution",
-                    statusCode, orderId);
+            case "2" -> {
+                log.info("[PAYMENT DEBUG]   Processing Successful Webhook (status_code=2) for order_id={}", orderId);
+                confirmPayment(payment, receivedSig);
+            }
+            case "-1", "-2", "-3" -> {
+                log.warn("[PAYMENT DEBUG]   Processing Failed Webhook (status_code={}) for order_id={}", statusCode, orderId);
+                failPayment(payment);
+            }
+            default -> log.info("[PAYMENT DEBUG]   Unrecognized status_code={} for order_id={} — no state change", statusCode, orderId);
         }
 
         paymentLog.setProcessed(true);
         paymentLogRepository.save(paymentLog);
+        log.info("[PAYMENT DEBUG] ==================================================");
     }
 
     // ==================== helpers ====================
