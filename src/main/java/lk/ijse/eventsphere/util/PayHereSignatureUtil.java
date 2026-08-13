@@ -17,25 +17,30 @@ public class PayHereSignatureUtil {
     private String merchantSecret;
 
     public String generateCheckoutHash(String merchantId, String orderId, String formattedAmount, String currency) {
-        // 1. Calculate MD5 of merchantSecret in LOWERCASE (Standard MD5 output)
-        String secretHash = md5Hex(merchantSecret.trim()).toLowerCase();
+        // Step 1: UpperCase MD5 of Merchant Secret
+        String secretHash = md5Hex(merchantSecret.trim()).toUpperCase();
 
-        // 2. Concatenate: merchant_id + order_id + amount + currency + secretHash (in uppercase)
-        // PayHere formula: md5(merchant_id + order_id + amount + currency + strtoupper(md5(merchant_secret)))
-        String raw = merchantId + orderId + formattedAmount + currency + secretHash.toUpperCase();
+        // Step 2: Build raw string
+        String raw = merchantId.trim() + orderId.trim() + formattedAmount.trim() + currency.trim() + secretHash;
 
-        // 3. Final Checkout Hash in UPPERCASE
+        // Step 3: Final UpperCase Hash
         String hash = md5Hex(raw).toUpperCase();
 
-        log.info("PayHere hash debug — merchantId={}, orderId={}, amount={}, currency={}, secretHash={}, raw={}, hash={}",
-                merchantId, orderId, formattedAmount, currency, secretHash, raw, hash);
+        log.info("PayHere Checkout Hash Debug:");
+        log.info("  merchantId      = {}", merchantId);
+        log.info("  orderId         = {}", orderId);
+        log.info("  formattedAmount = {}", formattedAmount);
+        log.info("  currency        = {}", currency);
+        log.info("  secretHash      = {}", secretHash);
+        log.info("  raw             = {}", raw);
+        log.info("  generatedHash   = {}", hash);
 
         return hash;
     }
 
     public String generateNotifySignature(String merchantId, String orderId, String amount, String currency, String statusCode) {
         String secretHash = md5Hex(merchantSecret.trim()).toUpperCase();
-        String raw = merchantId + orderId + amount + currency + statusCode + secretHash;
+        String raw = merchantId.trim() + orderId.trim() + amount.trim() + currency.trim() + statusCode.trim() + secretHash;
         return md5Hex(raw).toUpperCase();
     }
 
