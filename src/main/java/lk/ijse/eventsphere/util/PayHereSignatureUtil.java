@@ -17,13 +17,14 @@ public class PayHereSignatureUtil {
     private String merchantSecret;
 
     public String generateCheckoutHash(String merchantId, String orderId, String formattedAmount, String currency) {
-        // 1. Hash plain merchantSecret directly to MD5 Uppercase
-        String secretHash = md5Hex(merchantSecret.trim()).toUpperCase();
+        // 1. Calculate MD5 of merchantSecret in LOWERCASE (Standard MD5 output)
+        String secretHash = md5Hex(merchantSecret.trim()).toLowerCase();
 
-        // 2. Concatenate parameters: merchant_id + order_id + amount + currency + secretHash
-        String raw = merchantId + orderId + formattedAmount + currency + secretHash;
+        // 2. Concatenate: merchant_id + order_id + amount + currency + secretHash (in uppercase)
+        // PayHere formula: md5(merchant_id + order_id + amount + currency + strtoupper(md5(merchant_secret)))
+        String raw = merchantId + orderId + formattedAmount + currency + secretHash.toUpperCase();
 
-        // 3. Final Checkout Hash
+        // 3. Final Checkout Hash in UPPERCASE
         String hash = md5Hex(raw).toUpperCase();
 
         log.info("PayHere hash debug — merchantId={}, orderId={}, amount={}, currency={}, secretHash={}, raw={}, hash={}",
