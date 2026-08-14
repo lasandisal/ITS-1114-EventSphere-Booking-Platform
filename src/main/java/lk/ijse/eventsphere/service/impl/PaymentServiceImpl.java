@@ -291,33 +291,54 @@ public class PaymentServiceImpl implements PaymentService {
         booking.setConfirmedAt(LocalDateTime.now());
         bookingRepository.save(booking);
 
-        List<TicketEmailItem> emailItems = new ArrayList<>();
+        String purchaserEmail = booking.getUser().getEmail();
+        String purchaserName = booking.getUser().getFullName();
+        List<TicketEmailItem> masterTicketList = new ArrayList<>();
+
         for (BookingItem item : booking.getItems()) {
             for (Ticket ticket : item.getTickets()) {
                 String signedPayload = ticketSigningUtil.buildSignedPayload(ticket.getTicketCode());
                 byte[] qrPng = qrCodeService.generateQrPng(signedPayload, 300);
                 ticket.setIssuedAt(LocalDateTime.now());
 
-                emailItems.add(TicketEmailItem.builder()
+                TicketEmailItem emailItem = TicketEmailItem.builder()
                         .attendeeName(ticket.getAttendeeName())
                         .seatNumber(ticket.getSeatNumber())
                         .ticketCode(ticket.getTicketCode())
                         .qrPng(qrPng)
-                        .build());
+                        .build();
+
+                masterTicketList.add(emailItem);
+
+                // 1. Dispatch individual pass to guest if email is present and distinct from the purchaser
+                String guestEmail = ticket.getAttendeeEmail();
+                if (guestEmail != null && !guestEmail.isBlank() && !guestEmail.equalsIgnoreCase(purchaserEmail)) {
+                    emailService.sendIndividualTicketPass(
+                            guestEmail,
+                            ticket.getAttendeeName(),
+                            booking.getEvent().getTitle(),
+                            booking.getBookingReference(),
+                            emailItem
+                    );
+                }
             }
         }
         // Tickets are dirty-checked and flushed with the transaction commit
         // (issued_at set above) — no explicit save needed for managed entities.
 
-        emailService.sendBookingConfirmation(
-                booking.getUser().getEmail(),
-                booking.getUser().getFullName(),
+        // 2. Dispatch master order receipt & all tickets to the primary purchaser
+        emailService.sendOrderReceipt(
+                purchaserEmail,
+                purchaserName,
                 booking.getEvent().getTitle(),
                 booking.getBookingReference(),
-                emailItems);
+                booking.getTotalAmount(),
+                payment.getCurrency(),
+                masterTicketList
+        );
 
-        log.info("Payment confirmed and {} ticket(s) issued for booking {}",
-                emailItems.size(), booking.getBookingReference());
+        log.info("Payment confirmed for booking {} — dispatched order receipt to {} and individual passes to {} attendee(s)",
+                booking.getBookingReference(), purchaserEmail, masterTicketList.size());
     }
 
     private void failPayment(Payment payment) {

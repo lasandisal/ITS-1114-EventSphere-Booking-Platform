@@ -193,6 +193,27 @@ public class BookingServiceImpl implements BookingService {
         log.info("Released inventory for booking {} after payment failure", booking.getBookingReference());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BookingResponseDTO> getMyBookings(String tab, Pageable pageable) {
+        User currentUser = currentUserProvider.getCurrentUser();
+        LocalDateTime now = LocalDateTime.now();
+
+        Page<Booking> bookings;
+
+        if ("past".equalsIgnoreCase(tab)) {
+            bookings = bookingRepository.findPastBookings(currentUser.getId(), BookingStatus.CONFIRMED, now, pageable);
+        } else if ("cancelled".equalsIgnoreCase(tab)) {
+            List<BookingStatus> statuses = List.of(BookingStatus.CANCELLED, BookingStatus.EXPIRED);
+            bookings = bookingRepository.findByUserIdAndStatusInOrderByCreatedAtDesc(currentUser.getId(), statuses, pageable);
+        } else { // "upcoming" default
+            List<BookingStatus> statuses = List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING);
+            bookings = bookingRepository.findUpcomingBookings(currentUser.getId(), statuses, now, pageable);
+        }
+
+        return bookings.map(this::toDto);
+    }
+
     // ==================== helpers ====================
 
     // Shared by manual cancel and the expiry job — re-locks each ticket type

@@ -25,4 +25,10 @@ public class Category {
 
     @Column(nullable = false, unique = true, length = 80)
     private String slug;
+
+    @Column(length = 20)
+    private String icon; // Stores emoji e.g., 🎵, 💻
+
+    @Column(length = 500)
+    private String description; // Stores category description
 }

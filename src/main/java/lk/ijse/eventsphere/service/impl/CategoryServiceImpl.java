@@ -33,6 +33,8 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = Category.builder()
                 .name(request.getName())
                 .slug(slug)
+                .icon(request.getIcon() != null && !request.getIcon().isBlank() ? request.getIcon() : "🏷️")
+                .description(request.getDescription())
                 .build();
         categoryRepository.save(category);
         return toDto(category);
@@ -53,6 +55,9 @@ public class CategoryServiceImpl implements CategoryService {
 
         category.setName(request.getName());
         category.setSlug(newSlug);
+        category.setIcon(request.getIcon() != null && !request.getIcon().isBlank() ? request.getIcon() : "🏷️");
+        category.setDescription(request.getDescription());
+
         categoryRepository.save(category);
         return toDto(category);
     }
@@ -63,8 +68,6 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
 
-        // Guard against orphaning events that still reference this category —
-        // a hard FK violation would otherwise surface as an opaque 500.
         if (eventRepository.existsByCategoryId(id)) {
             throw new IllegalStateException(
                     "Cannot delete category '" + category.getName() + "' — events still reference it");
@@ -84,8 +87,6 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findAll().stream().map(this::toDto).toList();
     }
 
-    // Turns "Live Music & Concerts" into "live-music-concerts" — deterministic,
-    // so re-saving the same name never produces a different slug.
     private String toSlug(String name) {
         String normalized = Normalizer.normalize(name, Normalizer.Form.NFD)
                 .replaceAll("[^\\p{ASCII}]", "");
@@ -101,6 +102,8 @@ public class CategoryServiceImpl implements CategoryService {
                 .id(category.getId())
                 .name(category.getName())
                 .slug(category.getSlug())
+                .icon(category.getIcon())
+                .description(category.getDescription())
                 .build();
     }
 }

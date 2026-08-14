@@ -54,6 +54,7 @@ public class OrganizerServiceImpl implements OrganizerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public OrganizerResponseDTO getMyOrganizerProfile() {
         User user = currentUserProvider.getCurrentUser();
         Organizer organizer = organizerRepository.findByUserId(user.getId())

@@ -29,4 +29,6 @@ public interface BookingService {
     // cancelled/is charged back — releases inventory immediately rather than
     // waiting out the remainder of the hold TTL.
     void releaseFailedPaymentBooking(Long bookingId);
+
+    Page<BookingResponseDTO> getMyBookings(String tab, Pageable pageable);
 }

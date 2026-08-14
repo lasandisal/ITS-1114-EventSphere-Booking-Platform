@@ -39,9 +39,10 @@ public class BookingController {
 
     @GetMapping
     public ResponseEntity<CommonResponse<Page<BookingResponseDTO>>> myBookings(
+            @RequestParam(required = false, defaultValue = "upcoming") String tab,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<BookingResponseDTO> bookings = bookingService.getMyBookings(pageable);
-        return ResponseEntity.ok(CommonResponse.of(HttpStatus.OK.value(), "Your bookings retrieved", bookings));
+        Page<BookingResponseDTO> bookings = bookingService.getMyBookings(tab, pageable);
+        return ResponseEntity.ok(CommonResponse.of(HttpStatus.OK.value(), "Your " + tab + " bookings retrieved", bookings));
     }
 
     @PatchMapping("/{id}/cancel")
