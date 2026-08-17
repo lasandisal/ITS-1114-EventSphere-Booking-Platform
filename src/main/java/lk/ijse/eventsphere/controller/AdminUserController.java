@@ -1,6 +1,7 @@
 package lk.ijse.eventsphere.controller;
 
 import lk.ijse.eventsphere.constant.CommonResponse;
+import lk.ijse.eventsphere.dto.UserResponseDTO;
 import lk.ijse.eventsphere.entity.Organizer;
 import lk.ijse.eventsphere.entity.Role;
 import lk.ijse.eventsphere.entity.User;
@@ -16,6 +17,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
@@ -25,6 +29,23 @@ public class AdminUserController {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final OrganizerRepository organizerRepository;
+
+    @GetMapping
+    @Transactional(readOnly = true)
+    public ResponseEntity<CommonResponse<List<UserResponseDTO>>> getAllUsers() {
+        List<UserResponseDTO> users = userRepository.findAll().stream()
+                .map(user -> UserResponseDTO.builder()
+                        .id(user.getId())
+                        .fullName(user.getFullName())
+                        .email(user.getEmail())
+                        .roles(user.getRoles().stream()
+                                .map(role -> role.getName().name())
+                                .collect(Collectors.toList()))
+                        .build())
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(CommonResponse.of(HttpStatus.OK.value(), "Users fetched successfully", users));
+    }
 
     @PatchMapping("/{userId}/promote-to-admin")
     @Transactional
