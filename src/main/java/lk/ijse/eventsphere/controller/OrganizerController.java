@@ -29,13 +29,20 @@ public class OrganizerController {
                         "Application submitted — pending admin review", response));
     }
 
-    // isAuthenticated(), not hasAnyRole('ORGANIZER') — a PENDING applicant
-    // doesn't hold the ORGANIZER role yet (see OrganizerServiceImpl) but
-    // still needs to be able to check their own application status.
+    // Handles both GET /api/v1/organizer/me and GET /api/v1/organizer/profile
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/me")
+    @GetMapping({"/me", "/profile"})
     public ResponseEntity<CommonResponse<OrganizerResponseDTO>> getMyProfile() {
         OrganizerResponseDTO response = organizerService.getMyOrganizerProfile();
         return ResponseEntity.ok(CommonResponse.of(HttpStatus.OK.value(), "Organizer profile retrieved", response));
+    }
+
+    // Handles both PUT /api/v1/organizer/me and PUT /api/v1/organizer/profile
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @PutMapping({"/me", "/profile"})
+    public ResponseEntity<CommonResponse<OrganizerResponseDTO>> updateProfile(
+            @Valid @RequestBody OrganizerApplicationRequestDTO request) {
+        OrganizerResponseDTO response = organizerService.updateOrganizerProfile(request);
+        return ResponseEntity.ok(CommonResponse.of(HttpStatus.OK.value(), "Organizer profile updated successfully", response));
     }
 }

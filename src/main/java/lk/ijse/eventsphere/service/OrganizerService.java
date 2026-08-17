@@ -16,4 +16,8 @@ public interface OrganizerService {
     OrganizerResponseDTO verifyOrganizer(Long organizerId);
 
     void rejectOrganizer(Long organizerId);
+
+    List<OrganizerResponseDTO> getAllOrganizers();
+
+    OrganizerResponseDTO updateOrganizerProfile(OrganizerApplicationRequestDTO request);
 }

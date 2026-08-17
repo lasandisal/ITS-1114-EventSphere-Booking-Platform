@@ -16,11 +16,12 @@ import java.time.LocalDateTime;
 public class OrganizerResponseDTO {
     private Long id;
     private String businessName;
-    private String applicantName; // or user.getFullName()
+    private String applicantName;
+    private String applicantEmail;
+    private String applicantPhone;
     private String nicOrPassportNumber;
     private String businessRegistrationNumber;
     private String bio;
-    private String status; // PENDING, APPROVED, REJECTED
+    private String status;
     private LocalDateTime createdAt;
 }
-

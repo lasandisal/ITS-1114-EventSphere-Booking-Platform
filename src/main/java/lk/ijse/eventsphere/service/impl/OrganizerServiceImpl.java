@@ -71,6 +71,30 @@ public class OrganizerServiceImpl implements OrganizerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<OrganizerResponseDTO> getAllOrganizers() {
+        return organizerRepository.findAll().stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public OrganizerResponseDTO updateOrganizerProfile(OrganizerApplicationRequestDTO request) {
+        User user = currentUserProvider.getCurrentUser();
+        Organizer organizer = organizerRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Organizer profile not found for this account"));
+
+        organizer.setBusinessName(request.getBusinessName());
+        organizer.setBio(request.getBio());
+        organizer.setNicOrPassportNumber(request.getNicOrPassportNumber());
+        organizer.setBusinessRegistrationNumber(request.getBusinessRegistrationNumber());
+
+        organizerRepository.save(organizer);
+        return toDto(organizer);
+    }
+
+    @Override
     @Transactional
     public OrganizerResponseDTO verifyOrganizer(Long organizerId) {
         Organizer organizer = organizerRepository.findById(organizerId)
@@ -107,10 +131,13 @@ public class OrganizerServiceImpl implements OrganizerService {
     }
 
     private OrganizerResponseDTO toDto(Organizer organizer) {
+        User user = organizer.getUser();
         return OrganizerResponseDTO.builder()
                 .id(organizer.getId())
                 .businessName(organizer.getBusinessName())
-                .applicantName(organizer.getUser() != null ? organizer.getUser().getFullName() : null)
+                .applicantName(user != null ? user.getFullName() : null)
+                .applicantEmail(user != null ? user.getEmail() : null)
+                .applicantPhone(user != null ? user.getPhone() : null)
                 .nicOrPassportNumber(organizer.getNicOrPassportNumber())
                 .businessRegistrationNumber(organizer.getBusinessRegistrationNumber())
                 .bio(organizer.getBio())

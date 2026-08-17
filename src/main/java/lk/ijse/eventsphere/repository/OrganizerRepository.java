@@ -13,7 +13,5 @@ public interface OrganizerRepository extends JpaRepository<Organizer, Long> {
 
     Optional<Organizer> findByUserId(Long userId);
 
-//    List<Organizer> findByVerifiedFalse();
-
     List<Organizer> findByStatus(OrganizerStatus status);
 }

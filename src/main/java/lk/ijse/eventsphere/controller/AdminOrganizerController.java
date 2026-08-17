@@ -11,10 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Matches SecurityConfig's /api/v1/admin/** rule (hasRole ADMIN). This is
-// the human review step in the KYC-lite flow — an admin cross-checks the
-// submitted NIC/passport number and business registration number (manually,
-// outside the system) before approving.
 @RestController
 @RequestMapping("/api/v1/admin/organizers")
 @RequiredArgsConstructor
@@ -23,10 +19,18 @@ public class AdminOrganizerController {
 
     private final OrganizerService organizerService;
 
-    @GetMapping("/pending")
+    // Handles GET /api/v1/admin/organizers and GET /api/v1/admin/organizers/pending
+    @GetMapping({"", "/pending"})
     public ResponseEntity<CommonResponse<List<OrganizerResponseDTO>>> getPending() {
         List<OrganizerResponseDTO> pending = organizerService.getPendingApplications();
         return ResponseEntity.ok(CommonResponse.of(HttpStatus.OK.value(), "Pending applications retrieved", pending));
+    }
+
+    // Handles GET /api/v1/admin/organizers/all
+    @GetMapping("/all")
+    public ResponseEntity<CommonResponse<List<OrganizerResponseDTO>>> getAll() {
+        List<OrganizerResponseDTO> all = organizerService.getAllOrganizers();
+        return ResponseEntity.ok(CommonResponse.of(HttpStatus.OK.value(), "All organizers retrieved", all));
     }
 
     @PatchMapping("/{id}/verify")

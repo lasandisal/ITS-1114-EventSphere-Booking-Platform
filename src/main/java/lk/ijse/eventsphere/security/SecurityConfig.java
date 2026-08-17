@@ -66,15 +66,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/notify").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/payments/test-checkout").permitAll()
 
-                                // Endpoints that any logged-in user can access before becoming an organizer:
-                                .requestMatchers(HttpMethod.POST, "/api/v1/organizer/apply").authenticated()
-                                .requestMatchers(HttpMethod.GET, "/api/v1/organizer/me").authenticated()
+                        // Endpoints accessible by any logged-in user before/during organizer status:
+                        .requestMatchers(HttpMethod.POST, "/api/v1/organizer/apply").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/organizer/me", "/api/v1/organizer/profile").authenticated()
 
-                                // Organizer dashboard and management endpoints:
-                                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/api/v1/organizer/**").hasAnyRole("ORGANIZER", "ADMIN")
+                        // Role-scoped areas
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/organizer/**").hasAnyRole("ORGANIZER", "ADMIN")
 
-                                .anyRequest().authenticated()
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -82,9 +82,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Exposed so AuthService can call authenticationManager.authenticate(...)
-    // for login — this delegates to authenticationProvider() below, which
-    // runs CustomUserDetailsService + BCrypt comparison.
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -107,13 +104,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Explicit origin list (not "*") because allowCredentials(true) with a
-        // wildcard is rejected by browsers anyway, and an explicit list is the
-        // safer default for a graded/deployed app handling JWTs and payments.
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .toList();
-//        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedOrigins(origins);
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
