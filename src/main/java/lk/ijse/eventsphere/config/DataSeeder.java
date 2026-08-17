@@ -3,6 +3,7 @@ package lk.ijse.eventsphere.config;
 import lk.ijse.eventsphere.entity.Organizer;
 import lk.ijse.eventsphere.entity.Role;
 import lk.ijse.eventsphere.entity.User;
+import lk.ijse.eventsphere.enums.OrganizerStatus;
 import lk.ijse.eventsphere.enums.RoleName;
 import lk.ijse.eventsphere.enums.UserStatus;
 import lk.ijse.eventsphere.repository.OrganizerRepository;
@@ -63,8 +64,8 @@ public class DataSeeder implements CommandLineRunner {
         Organizer adminOrganizer = Organizer.builder()
                 .user(admin)
                 .businessName("EventSphere HQ")
-                .bio("System Administration Event Operations") // Changed description to bio
-                .verified(true) // Admin organizer account is verified by default
+                .bio("System Administration Event Operations")
+                .status(OrganizerStatus.APPROVED) // Admin organizer profile approved by default
                 .build();
         organizerRepository.save(adminOrganizer);
 

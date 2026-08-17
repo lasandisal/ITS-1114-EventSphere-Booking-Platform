@@ -38,9 +38,12 @@ public class AdminUserController {
                         .id(user.getId())
                         .fullName(user.getFullName())
                         .email(user.getEmail())
+                        .phone(user.getPhone())
+                        .status(user.getStatus() != null ? user.getStatus().name() : "ACTIVE")
                         .roles(user.getRoles().stream()
                                 .map(role -> role.getName().name())
                                 .collect(Collectors.toList()))
+                        .createdAt(user.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
 

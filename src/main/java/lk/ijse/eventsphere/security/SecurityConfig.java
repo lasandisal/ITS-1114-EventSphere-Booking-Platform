@@ -66,11 +66,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/notify").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/payments/test-checkout").permitAll()
 
-                        // Role-scoped areas.
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/organizer/**").hasAnyRole("ORGANIZER", "ADMIN")
+                                // Endpoints that any logged-in user can access before becoming an organizer:
+                                .requestMatchers(HttpMethod.POST, "/api/v1/organizer/apply").authenticated()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/organizer/me").authenticated()
 
-                        .anyRequest().authenticated()
+                                // Organizer dashboard and management endpoints:
+                                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/api/v1/organizer/**").hasAnyRole("ORGANIZER", "ADMIN")
+
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

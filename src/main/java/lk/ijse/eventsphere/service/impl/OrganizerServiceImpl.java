@@ -5,6 +5,7 @@ import lk.ijse.eventsphere.dto.OrganizerResponseDTO;
 import lk.ijse.eventsphere.entity.Organizer;
 import lk.ijse.eventsphere.entity.Role;
 import lk.ijse.eventsphere.entity.User;
+import lk.ijse.eventsphere.enums.OrganizerStatus;
 import lk.ijse.eventsphere.enums.RoleName;
 import lk.ijse.eventsphere.exception.DuplicateResourceException;
 import lk.ijse.eventsphere.exception.ResourceNotFoundException;
@@ -44,12 +45,10 @@ public class OrganizerServiceImpl implements OrganizerService {
                 .bio(request.getBio())
                 .nicOrPassportNumber(request.getNicOrPassportNumber())
                 .businessRegistrationNumber(request.getBusinessRegistrationNumber())
-                .verified(false) // PENDING — the ORGANIZER role is NOT granted until an admin approves
+                .status(OrganizerStatus.PENDING)
                 .build();
         organizerRepository.save(organizer);
 
-        // Deliberately no role grant here — see verifyOrganizer(). Applying
-        // creates a review-queue entry, not organizer access.
         return toDto(organizer);
     }
 
@@ -64,8 +63,9 @@ public class OrganizerServiceImpl implements OrganizerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganizerResponseDTO> getPendingApplications() {
-        return organizerRepository.findByVerifiedFalse().stream()
+        return organizerRepository.findByStatus(OrganizerStatus.PENDING).stream()
                 .map(this::toDto)
                 .toList();
     }
@@ -76,17 +76,13 @@ public class OrganizerServiceImpl implements OrganizerService {
         Organizer organizer = organizerRepository.findById(organizerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Organizer application not found: " + organizerId));
 
-        if (organizer.isVerified()) {
-            return toDto(organizer); // idempotent — approving twice is a no-op, not an error
+        if (organizer.getStatus() == OrganizerStatus.APPROVED) {
+            return toDto(organizer);
         }
 
-        organizer.setVerified(true);
+        organizer.setStatus(OrganizerStatus.APPROVED);
         organizerRepository.save(organizer);
 
-        // The ORGANIZER role is granted HERE, on approval — not at
-        // application time. This is the actual access gate; everything
-        // downstream (@PreAuthorize on event/ticket-type endpoints) relies
-        // on this role, not on the verified flag directly.
         User user = organizer.getUser();
         Role organizerRole = roleRepository.findByName(RoleName.ORGANIZER)
                 .orElseThrow(() -> new IllegalStateException(
@@ -103,24 +99,23 @@ public class OrganizerServiceImpl implements OrganizerService {
         Organizer organizer = organizerRepository.findById(organizerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Organizer application not found: " + organizerId));
 
-        if (organizer.isVerified()) {
+        if (organizer.getStatus() == OrganizerStatus.APPROVED) {
             throw new IllegalStateException("Cannot reject an already-approved organizer — revoke access instead");
         }
 
-        // No role was ever granted for a PENDING application, so rejection
-        // is just removing the application record — the user can reapply.
         organizerRepository.delete(organizer);
     }
 
     private OrganizerResponseDTO toDto(Organizer organizer) {
         return OrganizerResponseDTO.builder()
                 .id(organizer.getId())
-                .userId(organizer.getUser().getId())
                 .businessName(organizer.getBusinessName())
-                .bio(organizer.getBio())
+                .applicantName(organizer.getUser() != null ? organizer.getUser().getFullName() : null)
                 .nicOrPassportNumber(organizer.getNicOrPassportNumber())
                 .businessRegistrationNumber(organizer.getBusinessRegistrationNumber())
-                .verified(organizer.isVerified())
+                .bio(organizer.getBio())
+                .status(organizer.getStatus() != null ? organizer.getStatus().name() : OrganizerStatus.PENDING.name())
+                .createdAt(organizer.getCreatedAt())
                 .build();
     }
 }
