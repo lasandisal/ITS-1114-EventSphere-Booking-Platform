@@ -41,6 +41,10 @@ public class Organizer {
     @Builder.Default
     private OrganizerStatus status = OrganizerStatus.PENDING;
 
+    @Column(name = "is_verified", nullable = false)
+    @Builder.Default
+    private boolean isVerified = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

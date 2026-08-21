@@ -46,6 +46,7 @@ public class OrganizerServiceImpl implements OrganizerService {
                 .nicOrPassportNumber(request.getNicOrPassportNumber())
                 .businessRegistrationNumber(request.getBusinessRegistrationNumber())
                 .status(OrganizerStatus.PENDING)
+                .isVerified(false)
                 .build();
         organizerRepository.save(organizer);
 
@@ -100,11 +101,12 @@ public class OrganizerServiceImpl implements OrganizerService {
         Organizer organizer = organizerRepository.findById(organizerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Organizer application not found: " + organizerId));
 
-        if (organizer.getStatus() == OrganizerStatus.APPROVED) {
+        if (organizer.getStatus() == OrganizerStatus.APPROVED && organizer.isVerified()) {
             return toDto(organizer);
         }
 
         organizer.setStatus(OrganizerStatus.APPROVED);
+        organizer.setVerified(true);
         organizerRepository.save(organizer);
 
         User user = organizer.getUser();
@@ -142,6 +144,7 @@ public class OrganizerServiceImpl implements OrganizerService {
                 .businessRegistrationNumber(organizer.getBusinessRegistrationNumber())
                 .bio(organizer.getBio())
                 .status(organizer.getStatus() != null ? organizer.getStatus().name() : OrganizerStatus.PENDING.name())
+                .verified(organizer.isVerified())
                 .createdAt(organizer.getCreatedAt())
                 .build();
     }

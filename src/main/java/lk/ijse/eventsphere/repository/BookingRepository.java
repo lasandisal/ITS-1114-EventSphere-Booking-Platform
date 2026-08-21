@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -61,4 +62,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             Long userId,
             List<BookingStatus> statuses,
             Pageable pageable);
+
+    List<Booking> findByEventId(Long eventId);
+
+    List<Booking> findByStatus(BookingStatus status);
+
+    @Query("SELECT COALESCE(SUM(b.totalAmount), 0) FROM Booking b WHERE b.status = :status")
+    BigDecimal calculateTotalGrossRevenue(@Param("status") BookingStatus status);
+
+    @Query("SELECT COALESCE(SUM(bi.quantity), 0) FROM Booking b JOIN b.items bi WHERE b.status = :status")
+    Long calculateTotalTicketsSold(@Param("status") BookingStatus status);
 }

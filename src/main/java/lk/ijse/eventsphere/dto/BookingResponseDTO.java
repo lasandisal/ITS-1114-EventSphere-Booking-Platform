@@ -21,6 +21,13 @@ public class BookingResponseDTO {
     private String bookingReference;
     private Long eventId;
     private String eventTitle;
+
+    // Customer details for organizer / admin view
+    private Long userId;
+    private String customerName;
+    private String customerEmail;
+    private String customerPhone;
+
     private BookingStatus status;
     private BigDecimal totalAmount;
     private LocalDateTime expiresAt;

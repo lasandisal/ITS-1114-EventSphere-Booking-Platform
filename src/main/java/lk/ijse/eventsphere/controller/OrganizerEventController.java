@@ -2,13 +2,10 @@ package lk.ijse.eventsphere.controller;
 
 import jakarta.validation.Valid;
 import lk.ijse.eventsphere.constant.CommonResponse;
-import lk.ijse.eventsphere.dto.EventCreateRequestDTO;
-import lk.ijse.eventsphere.dto.EventResponseDTO;
-import lk.ijse.eventsphere.dto.EventUpdateRequestDTO;
-import lk.ijse.eventsphere.dto.TicketTypeRequestDTO;      // Add import
-import lk.ijse.eventsphere.dto.TicketTypeResponseDTO;     // Add import
+import lk.ijse.eventsphere.dto.*;
+import lk.ijse.eventsphere.service.BookingService;
 import lk.ijse.eventsphere.service.EventService;
-import lk.ijse.eventsphere.service.TicketTypeService;     // Add import
+import lk.ijse.eventsphere.service.TicketTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/organizer/events")
 @RequiredArgsConstructor
@@ -25,7 +24,8 @@ import org.springframework.web.bind.annotation.*;
 public class OrganizerEventController {
 
     private final EventService eventService;
-    private final TicketTypeService ticketTypeService; // Inject TicketTypeService
+    private final TicketTypeService ticketTypeService;
+    private final BookingService bookingService;
 
     @PostMapping
     public ResponseEntity<CommonResponse<EventResponseDTO>> create(
@@ -35,7 +35,6 @@ public class OrganizerEventController {
                 .body(CommonResponse.of(HttpStatus.CREATED.value(), "Event created in draft status", event));
     }
 
-    // --- ADD THIS METHOD HERE ---
     @PostMapping("/{eventId}/ticket-types")
     public ResponseEntity<CommonResponse<TicketTypeResponseDTO>> createTicketType(
             @PathVariable Long eventId,
@@ -43,6 +42,14 @@ public class OrganizerEventController {
         TicketTypeResponseDTO response = ticketTypeService.addTicketType(eventId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.of(HttpStatus.CREATED.value(), "Ticket type added successfully", response));
+    }
+
+    @GetMapping("/{eventId}/bookings")
+    public ResponseEntity<CommonResponse<List<BookingResponseDTO>>> getEventBookings(
+            @PathVariable Long eventId) {
+        List<BookingResponseDTO> bookings = bookingService.getBookingsByEventId(eventId);
+        return ResponseEntity.ok(
+                CommonResponse.of(HttpStatus.OK.value(), "Event bookings retrieved successfully", bookings));
     }
 
     @PutMapping("/{id}")

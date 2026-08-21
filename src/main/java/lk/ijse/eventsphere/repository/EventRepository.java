@@ -15,13 +15,21 @@ import java.util.Optional;
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
 
+    // Eagerly fetch associations for organizer dashboard
+    @EntityGraph(attributePaths = {"organizer", "category", "venue"})
     Page<Event> findByOrganizerId(Long organizerId, Pageable pageable);
 
-    // Eagerly fetch organizer, category, and venue for individual event lookups
+    // Eagerly fetch associations for admin dashboard
+    @Override
+    @EntityGraph(attributePaths = {"organizer", "category", "venue"})
+    Page<Event> findAll(Pageable pageable);
+
+    // Eagerly fetch associations for single event lookup
+    @Override
     @EntityGraph(attributePaths = {"organizer", "category", "venue"})
     Optional<Event> findById(Long id);
 
-    // Eagerly fetch associations for search/list queries
+    // Eagerly fetch associations for public search/browse
     @EntityGraph(attributePaths = {"organizer", "category", "venue"})
     @Query("""
         SELECT e FROM Event e 
@@ -38,4 +46,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     boolean existsByCategoryId(Long categoryId);
     boolean existsByVenueId(Long venueId);
+
+    long countByStatus(EventStatus status);
 }

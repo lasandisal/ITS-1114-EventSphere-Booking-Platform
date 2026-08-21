@@ -1,9 +1,12 @@
 package lk.ijse.eventsphere.service;
 
+import lk.ijse.eventsphere.dto.AdminAnalyticsOverviewDTO;
 import lk.ijse.eventsphere.dto.BookingCreateRequestDTO;
 import lk.ijse.eventsphere.dto.BookingResponseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 public interface BookingService {
 
@@ -31,4 +34,8 @@ public interface BookingService {
     void releaseFailedPaymentBooking(Long bookingId);
 
     Page<BookingResponseDTO> getMyBookings(String tab, Pageable pageable);
+
+    List<BookingResponseDTO> getBookingsByEventId(Long eventId);
+    AdminAnalyticsOverviewDTO getDashboardOverview();
+
 }

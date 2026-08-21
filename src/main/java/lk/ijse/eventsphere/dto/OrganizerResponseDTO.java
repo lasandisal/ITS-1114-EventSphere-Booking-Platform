@@ -23,5 +23,6 @@ public class OrganizerResponseDTO {
     private String businessRegistrationNumber;
     private String bio;
     private String status;
+    private boolean verified;
     private LocalDateTime createdAt;
 }

@@ -14,10 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -109,9 +107,6 @@ public class EventServiceImpl implements EventService {
         Event event = findEventOwnedByCurrentOrganizer(eventId);
         event.setStatus(EventStatus.CANCELLED);
         eventRepository.save(event);
-        // NOTE: cancelling a published event with existing CONFIRMED bookings
-        // is a refund/notification workflow of its own — out of scope here,
-        // but flag this as a TODO before demoing cancellation end-to-end.
         return toDto(event, mapTicketTypes(eventId));
     }
 
@@ -123,9 +118,8 @@ public class EventServiceImpl implements EventService {
         return toDto(event, mapTicketTypes(eventId));
     }
 
-
-    @Transactional(readOnly = true)
     @Override
+    @Transactional(readOnly = true)
     public Page<EventResponseDTO> searchPublishedEvents(String keyword, Long categoryId, Pageable pageable) {
         String sanitizedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
 
@@ -140,9 +134,17 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<EventResponseDTO> getMyEvents(Pageable pageable) {
         Organizer organizer = currentOrganizer();
         return eventRepository.findByOrganizerId(organizer.getId(), pageable)
+                .map(event -> toDto(event, mapTicketTypes(event.getId())));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<EventResponseDTO> getAllEventsAdmin(Pageable pageable) {
+        return eventRepository.findAll(pageable)
                 .map(event -> toDto(event, mapTicketTypes(event.getId())));
     }
 
@@ -164,7 +166,7 @@ public class EventServiceImpl implements EventService {
                 .map(r -> r.getName().name())
                 .anyMatch(name -> name.equals("ADMIN"));
 
-        if (!isAdmin && !event.getOrganizer().getUser().getId().equals(user.getId())) {
+        if (!isAdmin && (event.getOrganizer() == null || !event.getOrganizer().getUser().getId().equals(user.getId()))) {
             throw new AccessDeniedException("You do not own this event");
         }
         return event;
@@ -188,12 +190,12 @@ public class EventServiceImpl implements EventService {
     private EventResponseDTO toDto(Event event, List<TicketTypeResponseDTO> ticketTypes) {
         return EventResponseDTO.builder()
                 .id(event.getId())
-                .organizerId(event.getOrganizer().getId())
-                .organizerName(event.getOrganizer().getBusinessName())
-                .categoryId(event.getCategory().getId())
-                .categoryName(event.getCategory().getName())
-                .venueId(event.getVenue().getId())
-                .venueName(event.getVenue().getName())
+                .organizerId(event.getOrganizer() != null ? event.getOrganizer().getId() : null)
+                .organizerName(event.getOrganizer() != null ? event.getOrganizer().getBusinessName() : "N/A")
+                .categoryId(event.getCategory() != null ? event.getCategory().getId() : null)
+                .categoryName(event.getCategory() != null ? event.getCategory().getName() : "General")
+                .venueId(event.getVenue() != null ? event.getVenue().getId() : null)
+                .venueName(event.getVenue() != null ? event.getVenue().getName() : "TBD")
                 .title(event.getTitle())
                 .description(event.getDescription())
                 .bannerUrl(event.getBannerUrl())

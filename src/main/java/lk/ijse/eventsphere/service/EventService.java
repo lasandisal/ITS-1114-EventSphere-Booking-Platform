@@ -24,4 +24,6 @@ public interface EventService {
 
     // Organizer's own dashboard — all statuses, own events only.
     Page<EventResponseDTO> getMyEvents(Pageable pageable);
+
+    Page<EventResponseDTO> getAllEventsAdmin(Pageable pageable);
 }

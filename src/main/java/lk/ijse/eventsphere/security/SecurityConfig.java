@@ -9,9 +9,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,16 +26,13 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // enables @PreAuthorize on controller/service methods for fine-grained checks
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
-    // Comma-separated list, overridable per environment via
-    // app.cors.allowed-origins in application.properties — defaults cover
-    // common local dev ports so the frontend can call the API out of the box.
     @Value("${app.cors.allowed-origins:http://localhost:5500,http://localhost:3000,http://127.0.0.1:5500}")
     private String allowedOrigins;
 
@@ -43,42 +40,43 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable()) // stateless JWT API — no CSRF token needed
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-
+                        // 1. Browser Preflight Check
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Auth endpoints — must be reachable without a token.
+
+                        // 2. Public Authentication Routes
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/password-reset/**").permitAll()
 
-                        // Public event discovery — GUEST-level browsing per the
-                        // coursework's ADMIN/USER/GUEST role minimum: unauthenticated
-                        // visitors can search and view published events.
+                        // 3. Public Browse / Discovery Endpoints
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/venues/**").permitAll()
 
-                        // PayHere calls this server-to-server with no user JWT — it's
-                        // authenticated by MD5 signature re-verification instead
-                        // (see InvalidPaymentException / payment service), not Spring
-                        // Security. Never move this behind .authenticated().
+                        // 4. Payment Gateway Webhooks
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/notify").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/payments/test-checkout").permitAll()
 
-                        // Endpoints accessible by any logged-in user before/during organizer status:
+                        // 5. Authenticated User Profile Endpoints
+                        .requestMatchers("/api/v1/users/**").authenticated()
+
+                        // 6. Organizer Application & Review Status
                         .requestMatchers(HttpMethod.POST, "/api/v1/organizer/apply").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/organizer/me", "/api/v1/organizer/profile").authenticated()
 
-                        // Role-scoped areas
+                        // 7. Role-Protected Admin & Organizer Dashboards
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/organizer/**").hasAnyRole("ORGANIZER", "ADMIN")
 
+                        // 8. Default fallback: All other routes require authentication
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
