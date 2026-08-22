@@ -10,6 +10,8 @@ import lk.ijse.eventsphere.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -90,10 +92,11 @@ public class AssistantToolExecutor {
     }
 
     private String getMyBookings() throws Exception {
-        // getMyBookings() resolves "current user" internally via
-        // CurrentUserProvider (same as the REST endpoint) — this tool can
-        // only ever see the bookings of whoever is chatting right now, never
-        // another user's, regardless of what the model is asked to look up.
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return "The user is currently browsing as a guest and is not logged in. Inform them that to view their personal bookings, they need to log in or create an account on EventSphere.";
+        }
+
         Pageable pageable = PageRequest.of(0, MY_BOOKINGS_LIMIT);
         var results = bookingService.getMyBookings(pageable);
 

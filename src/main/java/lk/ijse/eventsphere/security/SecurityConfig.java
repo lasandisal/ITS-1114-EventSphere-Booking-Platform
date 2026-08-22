@@ -50,10 +50,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/password-reset/**").permitAll()
 
-                        // 3. Public Browse / Discovery Endpoints
+                        // 3. Public Browse / Discovery Endpoints & AI Assistant
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/venues/**").permitAll()
+                        .requestMatchers("/api/v1/assistant/**").permitAll()
 
                         // 4. Payment Gateway Webhooks
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/notify").permitAll()
@@ -104,8 +105,16 @@ public class SecurityConfig {
 
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
+                .filter(s -> !s.isEmpty())
                 .toList();
+
         configuration.setAllowedOrigins(origins);
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "https://*.vercel.app",
+                "https://eventsphere-webapp.vercel.app"
+        ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
