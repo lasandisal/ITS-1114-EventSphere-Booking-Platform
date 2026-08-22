@@ -10,6 +10,8 @@ import lk.ijse.eventsphere.dto.ChatRequestDTO;
 import lk.ijse.eventsphere.dto.ChatResponseDTO;
 import lk.ijse.eventsphere.service.AssistantService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,6 +21,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class AssistantServiceImpl implements AssistantService {
+
+    private static final Logger log = LoggerFactory.getLogger(AssistantServiceImpl.class);
 
     // Hard cap on function-call round trips per chat turn — a safety valve
     // against a runaway loop. Legitimate turns need at most 1-2.
@@ -76,53 +80,60 @@ public class AssistantServiceImpl implements AssistantService {
         }
         contents.add(Map.of("role", "user", "parts", List.of(Map.of("text", request.getMessage()))));
 
-        JsonNode response = null;
-        int iterations = 0;
+        String replyText;
 
-        while (true) {
-            response = geminiApiClient.generateContent(SYSTEM_PROMPT, contents, AssistantToolDefinitions.all());
-            JsonNode parts = response.path("candidates").path(0).path("content").path("parts");
+        try {
+            JsonNode response = null;
+            int iterations = 0;
 
-            List<JsonNode> functionCalls = new ArrayList<>();
-            for (JsonNode part : parts) {
-                if (part.has("functionCall")) {
-                    functionCalls.add(part);
+            while (true) {
+                response = geminiApiClient.generateContent(SYSTEM_PROMPT, contents, AssistantToolDefinitions.all());
+                JsonNode parts = response.path("candidates").path(0).path("content").path("parts");
+
+                List<JsonNode> functionCalls = new ArrayList<>();
+                for (JsonNode part : parts) {
+                    if (part.has("functionCall")) {
+                        functionCalls.add(part);
+                    }
                 }
+
+                if (functionCalls.isEmpty() || iterations >= MAX_TOOL_ITERATIONS) {
+                    break;
+                }
+                iterations++;
+
+                // Echo the model's own turn back verbatim (role "model", the
+                // functionCall part(s) as returned) before supplying results —
+                // Gemini expects the full exchange replayed each call, same
+                // stateless-history pattern as Anthropic's API.
+                contents.add(Map.of("role", "model", "parts", toObjectList(parts)));
+
+                List<Map<String, Object>> resultParts = new ArrayList<>();
+                for (JsonNode fcPart : functionCalls) {
+                    JsonNode functionCall = fcPart.path("functionCall");
+                    String toolName = functionCall.path("name").asText();
+                    JsonNode args = functionCall.path("args");
+                    String resultText = toolExecutor.execute(toolName, args);
+
+                    // functionResponse.response must be a JSON object, not a
+                    // bare string — wrap the tool's plain-text/JSON-string result.
+                    resultParts.add(Map.of(
+                            "functionResponse", Map.of(
+                                    "name", toolName,
+                                    "response", Map.of("result", resultText)
+                            )
+                    ));
+                }
+                // Function results go back as role "user" per Gemini's REST spec
+                // (there is no distinct "function" role on this endpoint).
+                contents.add(Map.of("role", "user", "parts", resultParts));
             }
 
-            if (functionCalls.isEmpty() || iterations >= MAX_TOOL_ITERATIONS) {
-                break;
-            }
-            iterations++;
-
-            // Echo the model's own turn back verbatim (role "model", the
-            // functionCall part(s) as returned) before supplying results —
-            // Gemini expects the full exchange replayed each call, same
-            // stateless-history pattern as Anthropic's API.
-            contents.add(Map.of("role", "model", "parts", toObjectList(parts)));
-
-            List<Map<String, Object>> resultParts = new ArrayList<>();
-            for (JsonNode fcPart : functionCalls) {
-                JsonNode functionCall = fcPart.path("functionCall");
-                String toolName = functionCall.path("name").asText();
-                JsonNode args = functionCall.path("args");
-                String resultText = toolExecutor.execute(toolName, args);
-
-                // functionResponse.response must be a JSON object, not a
-                // bare string — wrap the tool's plain-text/JSON-string result.
-                resultParts.add(Map.of(
-                        "functionResponse", Map.of(
-                                "name", toolName,
-                                "response", Map.of("result", resultText)
-                        )
-                ));
-            }
-            // Function results go back as role "user" per Gemini's REST spec
-            // (there is no distinct "function" role on this endpoint).
-            contents.add(Map.of("role", "user", "parts", resultParts));
+            replyText = extractText(response.path("candidates").path(0).path("content").path("parts"));
+        } catch (Exception e) {
+            log.error("[ASSISTANT ERROR] Failed to process AI chat turn: {}", e.getMessage(), e);
+            replyText = "I'm having trouble processing your request right now. Please try again in a moment, or explore our events directly on EventSphere!";
         }
-
-        String replyText = extractText(response.path("candidates").path(0).path("content").path("parts"));
 
         List<ChatMessageDTO> updatedHistory = new ArrayList<>(
                 request.getHistory() != null ? request.getHistory() : List.of());
