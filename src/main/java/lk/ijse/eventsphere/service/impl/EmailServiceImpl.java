@@ -24,7 +24,7 @@ public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username:eventsphere.tickets@gmail.com}")
+    @Value("${app.mail.sender-email:${spring.mail.username:eventsphere.tickets@gmail.com}}")
     private String senderEmail;
 
     // =========================================================================
@@ -134,7 +134,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setFrom(senderEmail, "EventSphere");
             helper.setReplyTo(senderEmail);
             helper.setTo(recipientEmail);
-            helper.setSubject("Your EventSphere Verification Code: " + otp);
+            helper.setSubject("EventSphere Account Verification Code");
 
             String plainText = "Hello " + recipientName + ",\n\n"
                     + "Your EventSphere email verification code is:\n\n"
@@ -285,6 +285,8 @@ public class EmailServiceImpl implements EmailService {
     private void applyTransactionalHeaders(MimeMessage message, String bookingReference) throws Exception {
         message.setHeader("X-Priority", "3");
         message.setHeader("Importance", "Normal");
+        message.setHeader("Auto-Submitted", "auto-generated");
+        message.setHeader("X-Auto-Response-Suppress", "All");
         if (bookingReference != null && !bookingReference.isBlank()) {
             message.setHeader("X-Booking-Reference", bookingReference);
         }
