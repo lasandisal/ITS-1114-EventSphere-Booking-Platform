@@ -3,9 +3,7 @@ package lk.ijse.eventsphere.controller;
 import jakarta.validation.Valid;
 import lk.ijse.eventsphere.constant.CommonResponse;
 import lk.ijse.eventsphere.constant.ResponseMessage;
-import lk.ijse.eventsphere.dto.AuthResponseDTO;
-import lk.ijse.eventsphere.dto.LoginRequestDTO;
-import lk.ijse.eventsphere.dto.RegisterRequestDTO;
+import lk.ijse.eventsphere.dto.*;
 import lk.ijse.eventsphere.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,11 +18,27 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<CommonResponse<AuthResponseDTO>> register(
+    public ResponseEntity<CommonResponse<RegisterResponseDTO>> register(
             @Valid @RequestBody RegisterRequestDTO request) {
-        AuthResponseDTO response = authService.register(request);
+        RegisterResponseDTO response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.of(HttpStatus.CREATED.value(), ResponseMessage.REGISTRATION_SUCCESS, response));
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<CommonResponse<AuthResponseDTO>> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequestDTO request) {
+        AuthResponseDTO response = authService.verifyOtp(request);
+        return ResponseEntity.ok(
+                CommonResponse.of(HttpStatus.OK.value(), "Email verified successfully", response));
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<CommonResponse<Void>> resendOtp(
+            @Valid @RequestBody ResendOtpRequestDTO request) {
+        authService.resendOtp(request);
+        return ResponseEntity.ok(
+                CommonResponse.of(HttpStatus.OK.value(), "A new verification code has been sent to your email", null));
     }
 
     @PostMapping("/login")

@@ -42,6 +42,16 @@ public class User {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    @Column(name = "verification_otp", length = 10)
+    private String verificationOtp;
+
+    @Column(name = "verification_otp_expires_at")
+    private LocalDateTime verificationOtpExpiresAt;
+
     // Many-to-many with roles, JPA manages the user_roles join table directly —
     // no dedicated entity needed for a pure junction table.
     @ManyToMany(fetch = FetchType.EAGER)

@@ -15,7 +15,7 @@ Content-Type: application/json
 %}
 
 
-### 2. Register New User
+### 2. Register New User (Dispatches 6-digit OTP to email)
 POST {{host}}/api/v1/auth/register
 Content-Type: application/json
 
@@ -23,6 +23,32 @@ Content-Type: application/json
   "fullName": "Lasandi Salwathura",
   "email": "lasandi@example.com",
   "password": "Password123!"
+}
+
+
+### 2a. Verify Email with OTP
+POST {{host}}/api/v1/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "lasandi@example.com",
+  "otp": "123456"
+}
+
+> {%
+    if (response.status === 200 && response.body.data && response.body.data.token) {
+        client.global.set("user_token", response.body.data.token);
+        client.log("User verified and JWT Token captured successfully!");
+    }
+%}
+
+
+### 2b. Resend Verification OTP
+POST {{host}}/api/v1/auth/resend-otp
+Content-Type: application/json
+
+{
+  "email": "lasandi@example.com"
 }
 
 

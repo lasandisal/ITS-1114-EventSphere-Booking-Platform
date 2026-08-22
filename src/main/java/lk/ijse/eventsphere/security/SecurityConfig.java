@@ -46,9 +46,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // 2. Public Authentication Routes
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/password-reset/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
 
                         // 3. Public Browse / Discovery Endpoints & AI Assistant
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()

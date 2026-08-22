@@ -24,4 +24,9 @@ public interface EmailService {
     void sendIndividualTicketPass(String attendeeEmail, String attendeeName,
                                   String eventTitle, String bookingReference,
                                   TicketEmailItem ticket);
+
+    /**
+     * 6-digit Email Verification OTP sent upon user sign-up or resend request.
+     */
+    void sendVerificationOtpEmail(String recipientEmail, String recipientName, String otp);
 }
