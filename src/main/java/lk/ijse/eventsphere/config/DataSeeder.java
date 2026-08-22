@@ -30,7 +30,7 @@ public class DataSeeder implements CommandLineRunner {
     private final OrganizerRepository organizerRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    @Value("${app.admin.email:admin@eventsphere.lk}")
+    @Value("${app.admin.email:eventsphere.tickets@gmail.com}")
     private String adminEmail;
 
     @Value("${app.admin.password:ChangeMe123}")
