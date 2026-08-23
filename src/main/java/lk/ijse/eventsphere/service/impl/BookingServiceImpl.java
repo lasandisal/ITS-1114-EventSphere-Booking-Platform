@@ -10,6 +10,7 @@ import lk.ijse.eventsphere.exception.ResourceNotFoundException;
 import lk.ijse.eventsphere.repository.*;
 import lk.ijse.eventsphere.security.CurrentUserProvider;
 import lk.ijse.eventsphere.service.BookingService;
+import lk.ijse.eventsphere.util.TicketSigningUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ public class BookingServiceImpl implements BookingService {
     private final CurrentUserProvider currentUserProvider;
     private final OrganizerRepository organizerRepository;
     private final UserRepository userRepository;
+    private final TicketSigningUtil ticketSigningUtil;
 
     @Value("${booking.hold-ttl-minutes}")
     private long holdTtlMinutes;
@@ -276,6 +278,11 @@ public class BookingServiceImpl implements BookingService {
                         .quantity(item.getQuantity())
                         .unitPrice(item.getUnitPrice())
                         .subtotal(item.getSubtotal())
+                        .tickets(item.getTickets() != null
+                                ? item.getTickets().stream()
+                                .map(this::toTicketSummaryDto)
+                                .toList()
+                                : List.of())
                         .build())
                 .toList()
                 : List.of();
@@ -295,6 +302,18 @@ public class BookingServiceImpl implements BookingService {
                 .createdAt(booking.getCreatedAt())
                 .confirmedAt(booking.getConfirmedAt())
                 .items(itemDTOs)
+                .build();
+    }
+
+    private TicketSummaryDTO toTicketSummaryDto(Ticket ticket) {
+        return TicketSummaryDTO.builder()
+                .id(ticket.getId())
+                .ticketCode(ticket.getTicketCode())
+                .qrPayload(ticket.getTicketCode() != null ? ticketSigningUtil.buildSignedPayload(ticket.getTicketCode()) : null)
+                .attendeeName(ticket.getAttendeeName())
+                .attendeeEmail(ticket.getAttendeeEmail())
+                .seatNumber(ticket.getSeatNumber())
+                .status(ticket.getStatus())
                 .build();
     }
 

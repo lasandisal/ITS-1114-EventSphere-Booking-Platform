@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class TicketSummaryDTO {
     private Long id;
     private String ticketCode;
+    private String qrPayload;
     private String attendeeName;
     private String attendeeEmail;
     private String seatNumber;
