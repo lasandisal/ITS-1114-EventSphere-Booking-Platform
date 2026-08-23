@@ -170,6 +170,41 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user);
     }
 
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequestDTO request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("No account found with email: " + request.getEmail()));
+
+        String otp = generateOtp();
+        user.setPasswordResetOtp(otp);
+        user.setPasswordResetOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
+        userRepository.save(user);
+
+        emailService.sendPasswordResetOtpEmail(user.getEmail(), user.getFullName(), otp);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequestDTO request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("No account found with email: " + request.getEmail()));
+
+        if (user.getPasswordResetOtp() == null || !user.getPasswordResetOtp().equals(request.getOtp().trim())) {
+            throw new InvalidOtpException("Invalid password reset code. Please check your OTP and try again.");
+        }
+
+        if (user.getPasswordResetOtpExpiresAt() != null && user.getPasswordResetOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidOtpException("Password reset code has expired. Please request a new code.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setPasswordResetOtp(null);
+        user.setPasswordResetOtpExpiresAt(null);
+        user.setEmailVerified(true);
+        userRepository.save(user);
+    }
+
     private String generateOtp() {
         SecureRandom random = new SecureRandom();
         int code = random.nextInt(1_000_000);

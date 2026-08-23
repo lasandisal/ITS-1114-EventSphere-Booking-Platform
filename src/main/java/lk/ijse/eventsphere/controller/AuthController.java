@@ -48,4 +48,20 @@ public class AuthController {
         return ResponseEntity.ok(
                 CommonResponse.of(HttpStatus.OK.value(), ResponseMessage.LOGIN_SUCCESS, response));
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<CommonResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequestDTO request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(
+                CommonResponse.of(HttpStatus.OK.value(), "Password reset verification code has been sent to your email.", null));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<CommonResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequestDTO request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(
+                CommonResponse.of(HttpStatus.OK.value(), "Password has been reset successfully. You can now log in.", null));
+    }
 }

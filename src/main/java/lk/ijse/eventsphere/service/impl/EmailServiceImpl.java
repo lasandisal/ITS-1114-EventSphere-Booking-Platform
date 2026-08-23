@@ -153,6 +153,38 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Override
+    @Async
+    public void sendPasswordResetOtpEmail(String recipientEmail, String recipientName, String otp) {
+        log.info("[EMAIL] Sending password reset OTP to {}", recipientEmail);
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            applyTransactionalHeaders(message, "RESET-" + otp);
+
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(senderEmail, "EventSphere");
+            helper.setReplyTo(senderEmail);
+            helper.setTo(recipientEmail);
+            helper.setSubject("EventSphere Password Reset Code");
+
+            String plainText = "Hello " + recipientName + ",\n\n"
+                    + "You requested to reset your password for EventSphere.\n\n"
+                    + "Your password reset verification code is:\n\n"
+                    + "   " + otp + "\n\n"
+                    + "This code will expire in 10 minutes.\n\n"
+                    + "If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.\n\n"
+                    + "Best regards,\nEventSphere Security Team";
+
+            String htmlBody = buildPasswordResetOtpHtml(recipientName, otp);
+            helper.setText(plainText, htmlBody);
+
+            mailSender.send(message);
+            log.info("[EMAIL SUCCESS] Password reset OTP successfully sent to {}", recipientEmail);
+        } catch (Exception e) {
+            log.error("[EMAIL ERROR] Failed to send password reset OTP to {}: {}", recipientEmail, e.getMessage(), e);
+        }
+    }
+
     // =========================================================================
     // LEGACY COMPATIBILITY
     // =========================================================================
@@ -189,6 +221,31 @@ public class EmailServiceImpl implements EmailService {
                 + "<tr><td style='padding: 20px 32px; background-color: #fafafa; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.5;'>"
                 + "<p style='margin: 0 0 4px 0;'><strong>EventSphere Ticketing Platform</strong></p>"
                 + "<p style='margin: 0;'>If you did not register for an EventSphere account, you can safely ignore this email.</p>"
+                + "</td></tr></table></body></html>";
+    }
+
+    private String buildPasswordResetOtpHtml(String name, String otp) {
+        return "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head>"
+                + "<body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 24px;'>"
+                + "<table align='center' border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 550px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>"
+                + "<tr><td style='background: #7d4f50; padding: 26px 24px; text-align: center; color: #ffffff;'>"
+                + "<h1 style='margin: 0; font-size: 22px; font-weight: 700;'>EventSphere</h1>"
+                + "<p style='margin: 4px 0 0 0; font-size: 14px; color: #f2d6d7;'>Password Reset Request</p>"
+                + "</td></tr>"
+                + "<tr><td style='padding: 32px 32px 24px 32px; text-align: center;'>"
+                + "<p style='font-size: 16px; color: #1e293b; margin: 0 0 12px 0;'>Hello <b>" + escape(name) + "</b>,</p>"
+                + "<p style='font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 24px 0;'>We received a request to reset your EventSphere account password. Please use the 6-digit verification code below to set a new password:</p>"
+                + "<div style='background: #f8fafc; border: 2px dashed #7d4f50; border-radius: 10px; padding: 20px; margin: 0 auto 24px auto; display: inline-block; min-width: 240px;'>"
+                + "<span style='font-family: \"Courier New\", Courier, monospace; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #7d4f50;'>" + escape(otp) + "</span>"
+                + "</div>"
+                + "<p style='font-size: 13px; color: #64748b; margin: 0 0 16px 0;'>This password reset code will expire in <strong>10 minutes</strong>.</p>"
+                + "<div style='background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #92400e; text-align: left;'>"
+                + "<strong>Security Alert:</strong> If you did not initiate this password reset, please ignore this email or review your account security immediately."
+                + "</div>"
+                + "</td></tr>"
+                + "<tr><td style='padding: 20px 32px; background-color: #fafafa; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.5;'>"
+                + "<p style='margin: 0 0 4px 0;'><strong>EventSphere Security &amp; Identity</strong></p>"
+                + "<p style='margin: 0;'>Secure access to your tickets and events.</p>"
                 + "</td></tr></table></body></html>";
     }
     private String buildMasterReceiptHtml(String name, String eventTitle, String bookingReference,

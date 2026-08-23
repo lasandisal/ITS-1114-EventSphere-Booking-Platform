@@ -29,4 +29,9 @@ public interface EmailService {
      * 6-digit Email Verification OTP sent upon user sign-up or resend request.
      */
     void sendVerificationOtpEmail(String recipientEmail, String recipientName, String otp);
+
+    /**
+     * 6-digit Password Reset OTP sent upon forgot password request.
+     */
+    void sendPasswordResetOtpEmail(String recipientEmail, String recipientName, String otp);
 }

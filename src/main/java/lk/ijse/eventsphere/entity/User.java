@@ -52,6 +52,12 @@ public class User {
     @Column(name = "verification_otp_expires_at")
     private LocalDateTime verificationOtpExpiresAt;
 
+    @Column(name = "password_reset_otp", length = 10)
+    private String passwordResetOtp;
+
+    @Column(name = "password_reset_otp_expires_at")
+    private LocalDateTime passwordResetOtpExpiresAt;
+
     // Many-to-many with roles, JPA manages the user_roles join table directly —
     // no dedicated entity needed for a pure junction table.
     @ManyToMany(fetch = FetchType.EAGER)

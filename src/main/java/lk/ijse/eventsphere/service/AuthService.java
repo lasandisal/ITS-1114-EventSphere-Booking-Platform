@@ -11,4 +11,8 @@ public interface AuthService {
     void resendOtp(ResendOtpRequestDTO request);
 
     AuthResponseDTO login(LoginRequestDTO request);
+
+    void forgotPassword(ForgotPasswordRequestDTO request);
+
+    void resetPassword(ResetPasswordRequestDTO request);
 }
