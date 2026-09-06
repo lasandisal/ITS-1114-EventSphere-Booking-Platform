@@ -1,10 +1,12 @@
 package lk.ijse.eventsphere.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,6 +18,7 @@ import java.util.Map;
 // ErrorResponseDTO shape everywhere, per the coursework's "Global Controller
 // Advice" requirement — separates operational errors (expected, domain-level)
 // from systemic bugs (unexpected, logged as 500).
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -76,9 +79,9 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", request, fieldErrors);
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponseDTO> handleBadCredentials(
-            BadCredentialsException ex, HttpServletRequest request) {
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAuthentication(
+            AuthenticationException ex, HttpServletRequest request) {
         return build(HttpStatus.UNAUTHORIZED, "Invalid email or password", request, null);
     }
 
@@ -86,6 +89,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleAccessDenied(
             AccessDeniedException ex, HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, "You do not have permission to perform this action", request, null);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleDataIntegrity(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.error("Data integrity violation at {}: {}", request.getRequestURI(), ex.getMessage());
+        return build(HttpStatus.CONFLICT, "Database constraint violation or duplicate entry", request, null);
     }
 
     // Business-rule violations raised as plain Java exceptions (bad date
@@ -103,6 +113,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> handleGeneric(
             Exception ex, HttpServletRequest request) {
+        log.error("Unexpected error handling request {}: {}", request.getRequestURI(), ex.getMessage(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request, null);
     }
 

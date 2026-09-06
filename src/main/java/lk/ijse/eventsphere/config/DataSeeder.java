@@ -29,6 +29,7 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final javax.sql.DataSource dataSource;
 
     @Value("${app.admin.email:eventsphere.tickets@gmail.com}")
     private String adminEmail;
@@ -38,6 +39,15 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // Defensive cleanup: ensure legacy 'verified' column from earlier schema drafts is dropped
+        try (var conn = dataSource.getConnection();
+             var stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE organizers DROP COLUMN verified");
+            log.info("Cleaned up legacy 'verified' column from organizers table.");
+        } catch (Exception ignored) {
+            // Column already dropped or table does not exist yet
+        }
+
         for (RoleName roleName : RoleName.values()) {
             roleRepository.findByName(roleName)
                     .orElseGet(() -> roleRepository.save(Role.builder().name(roleName).build()));

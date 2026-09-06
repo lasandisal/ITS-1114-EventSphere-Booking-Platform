@@ -29,4 +29,10 @@ public class OrganizerApplicationRequestDTO {
 
     @Size(max = 50)
     private String businessRegistrationNumber;
+
+    @Size(max = 150)
+    private String applicantName;
+
+    @Size(max = 20)
+    private String applicantPhone;
 }

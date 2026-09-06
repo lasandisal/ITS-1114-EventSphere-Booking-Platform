@@ -39,6 +39,12 @@ public class OrganizerServiceImpl implements OrganizerService {
                     "An organizer application already exists for this account (pending or approved)");
         }
 
+        if (request.getApplicantPhone() != null && !request.getApplicantPhone().isBlank()
+                && (user.getPhone() == null || user.getPhone().isBlank())) {
+            user.setPhone(request.getApplicantPhone().trim());
+            userRepository.save(user);
+        }
+
         Organizer organizer = Organizer.builder()
                 .user(user)
                 .businessName(request.getBusinessName())
