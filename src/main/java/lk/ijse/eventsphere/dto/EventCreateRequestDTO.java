@@ -30,6 +30,7 @@ public class EventCreateRequestDTO {
     @Size(max = 5000)
     private String description;
 
+    @Size(max = 500, message = "Banner URL cannot exceed 500 characters")
     private String bannerUrl;
 
     @NotNull(message = "Start date/time is required")

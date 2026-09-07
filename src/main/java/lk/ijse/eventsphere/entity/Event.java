@@ -41,6 +41,7 @@ public class Event {
     private String title;
 
     @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "banner_url", length = 500)
