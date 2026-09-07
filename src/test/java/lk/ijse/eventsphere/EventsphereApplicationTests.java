@@ -1,10 +1,10 @@
 package lk.ijse.eventsphere;
 
-import lk.ijse.eventsphere.entity.Category;
-import lk.ijse.eventsphere.entity.Venue;
-import lk.ijse.eventsphere.repository.CategoryRepository;
-import lk.ijse.eventsphere.repository.EventRepository;
-import lk.ijse.eventsphere.repository.VenueRepository;
+import lk.ijse.eventsphere.entity.*;
+import lk.ijse.eventsphere.enums.BookingStatus;
+import lk.ijse.eventsphere.repository.*;
+import lk.ijse.eventsphere.service.BookingService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,6 +12,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,6 +37,18 @@ class EventsphereApplicationTests {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private BookingService bookingService;
+
+    @Autowired
+    private BookingRepository bookingRepository;
+
+    @Autowired
+    private TicketTypeRepository ticketTypeRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     void contextLoads() {
@@ -114,5 +131,56 @@ class EventsphereApplicationTests {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("is already booked for another event")));
+    }
+
+    @Test
+    void testStaleBookingExpiryAndInventoryRestoration() {
+        Event event = eventRepository.findAll().stream().findFirst().orElse(null);
+        User user = userRepository.findAll().stream().findFirst().orElse(null);
+        if (event == null || user == null) return;
+
+        // 1. Create a fresh TicketType with total=100, available=89 (simulating 11 tickets currently locked)
+        TicketType ticketType = ticketTypeRepository.save(TicketType.builder()
+                .event(event)
+                .name("VIP Stale Expiry Test " + System.currentTimeMillis())
+                .price(BigDecimal.valueOf(1500))
+                .totalQuantity(100)
+                .availableQuantity(89)
+                .build());
+
+        // 2. Create a PENDING booking with expiresAt 5 minutes ago holding 11 tickets
+        Booking booking = Booking.builder()
+                .bookingReference("EXP-" + UUID.randomUUID().toString().substring(0, 8))
+                .user(user)
+                .event(event)
+                .status(BookingStatus.PENDING)
+                .totalAmount(BigDecimal.valueOf(16500))
+                .expiresAt(LocalDateTime.now().minusMinutes(5))
+                .items(new ArrayList<>())
+                .build();
+
+        BookingItem item = BookingItem.builder()
+                .booking(booking)
+                .ticketType(ticketType)
+                .quantity(11)
+                .unitPrice(BigDecimal.valueOf(1500))
+                .subtotal(BigDecimal.valueOf(16500))
+                .build();
+
+        booking.getItems().add(item);
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // 3. Trigger expireStaleBookings
+        bookingService.expireStaleBookings();
+
+        // 4. Verify availableQuantity is restored back to 100
+        TicketType reloadedTicketType = ticketTypeRepository.findById(ticketType.getId()).orElseThrow();
+        Assertions.assertEquals(100, reloadedTicketType.getAvailableQuantity(),
+                "Inventory must be released back to totalQuantity when booking expires");
+
+        // 5. Verify booking status transitioned to EXPIRED
+        Booking reloadedBooking = bookingRepository.findById(savedBooking.getId()).orElseThrow();
+        Assertions.assertEquals(BookingStatus.EXPIRED, reloadedBooking.getStatus(),
+                "Booking status must transition to EXPIRED");
     }
 }

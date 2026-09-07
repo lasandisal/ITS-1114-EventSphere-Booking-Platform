@@ -236,8 +236,11 @@ public class BookingServiceImpl implements BookingService {
             TicketType ticketType = ticketTypeRepository.lockById(item.getTicketType().getId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Ticket type not found: " + item.getTicketType().getId()));
-            ticketType.setAvailableQuantity(ticketType.getAvailableQuantity() + item.getQuantity());
+            int restored = Math.min(ticketType.getTotalQuantity(), ticketType.getAvailableQuantity() + item.getQuantity());
+            ticketType.setAvailableQuantity(restored);
             ticketTypeRepository.save(ticketType);
+            log.info("Released {} held ticket(s) for '{}' (ID: {}). Available quantity restored to {}",
+                    item.getQuantity(), ticketType.getName(), ticketType.getId(), restored);
         }
     }
 
