@@ -6,6 +6,7 @@ import lk.ijse.eventsphere.dto.EventUpdateRequestDTO;
 import lk.ijse.eventsphere.dto.TicketTypeResponseDTO;
 import lk.ijse.eventsphere.entity.*;
 import lk.ijse.eventsphere.enums.EventStatus;
+import lk.ijse.eventsphere.exception.DuplicateResourceException;
 import lk.ijse.eventsphere.exception.ResourceNotFoundException;
 import lk.ijse.eventsphere.repository.*;
 import lk.ijse.eventsphere.security.CurrentUserProvider;
@@ -17,6 +18,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -41,6 +45,19 @@ public class EventServiceImpl implements EventService {
 
         if (!request.getEndDatetime().isAfter(request.getStartDatetime())) {
             throw new IllegalArgumentException("End date/time must be after start date/time");
+        }
+
+        // 1. Prevent duplicate active event for the same organizer on the same day
+        LocalDate startDate = request.getStartDatetime().toLocalDate();
+        LocalDateTime startOfDay = startDate.atStartOfDay();
+        LocalDateTime endOfDay = startDate.atTime(LocalTime.MAX);
+        if (eventRepository.existsDuplicateForOrganizer(organizer.getId(), request.getTitle(), startOfDay, endOfDay, null)) {
+            throw new DuplicateResourceException("You already have an active event titled '" + request.getTitle().trim() + "' on this date");
+        }
+
+        // 2. Prevent venue time-slot collision (double booking)
+        if (eventRepository.existsVenueCollision(venue.getId(), request.getStartDatetime(), request.getEndDatetime(), null)) {
+            throw new DuplicateResourceException("The venue '" + venue.getName() + "' is already booked for another event during this time window");
         }
 
         Event event = Event.builder()
@@ -80,6 +97,19 @@ public class EventServiceImpl implements EventService {
 
         if (!event.getEndDatetime().isAfter(event.getStartDatetime())) {
             throw new IllegalArgumentException("End date/time must be after start date/time");
+        }
+
+        // 1. Prevent duplicate active event for the same organizer on the same day (excluding this event)
+        LocalDate startDate = event.getStartDatetime().toLocalDate();
+        LocalDateTime startOfDay = startDate.atStartOfDay();
+        LocalDateTime endOfDay = startDate.atTime(LocalTime.MAX);
+        if (eventRepository.existsDuplicateForOrganizer(event.getOrganizer().getId(), event.getTitle(), startOfDay, endOfDay, eventId)) {
+            throw new DuplicateResourceException("You already have another active event titled '" + event.getTitle().trim() + "' on this date");
+        }
+
+        // 2. Prevent venue time-slot collision (excluding this event)
+        if (eventRepository.existsVenueCollision(event.getVenue().getId(), event.getStartDatetime(), event.getEndDatetime(), eventId)) {
+            throw new DuplicateResourceException("The venue '" + event.getVenue().getName() + "' is already booked for another event during this time window");
         }
 
         eventRepository.save(event);
