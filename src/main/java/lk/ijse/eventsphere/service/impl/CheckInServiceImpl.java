@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,8 @@ public class CheckInServiceImpl implements CheckInService {
     private final CheckInRepository checkInRepository;
     private final CurrentUserProvider currentUserProvider;
     private final TicketSigningUtil ticketSigningUtil;
+
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a, MMM dd");
 
     @Override
     @Transactional
@@ -74,8 +78,15 @@ public class CheckInServiceImpl implements CheckInService {
                     .checkedInBy(staff)
                     .locationNote(request.getLocationNote())
                     .build());
+
+            String firstScanDetail = "";
+            Optional<CheckIn> firstCheckIn = checkInRepository.findFirstByTicketOrderByCheckInTimeAsc(ticket);
+            if (firstCheckIn.isPresent() && firstCheckIn.get().getCheckInTime() != null) {
+                firstScanDetail = " at " + firstCheckIn.get().getCheckInTime().format(TIME_FORMATTER);
+            }
+
             throw new TicketAlreadyUsedException(
-                    "This ticket was already used for entry (attendee: " + ticket.getAttendeeName() + ")");
+                    "This ticket was already used for entry" + firstScanDetail + " (Attendee: " + ticket.getAttendeeName() + ")");
         }
 
         ticket.setStatus(TicketStatus.USED);
@@ -87,11 +98,19 @@ public class CheckInServiceImpl implements CheckInService {
                 .locationNote(request.getLocationNote())
                 .build());
 
+        String ticketTypeName = "Standard Admission";
+        if (ticket.getBookingItem() != null && ticket.getBookingItem().getTicketType() != null) {
+            ticketTypeName = ticket.getBookingItem().getTicketType().getName();
+        }
+
         return CheckInResponseDTO.builder()
                 .ticketId(ticket.getId())
                 .attendeeName(ticket.getAttendeeName())
+                .attendeeEmail(ticket.getAttendeeEmail())
                 .seatNumber(ticket.getSeatNumber())
                 .eventTitle(event.getTitle())
+                .ticketTypeName(ticketTypeName)
+                .bookingReference(booking.getBookingReference())
                 .checkedInAt(checkIn.getCheckInTime() != null ? checkIn.getCheckInTime() : LocalDateTime.now())
                 .build();
     }

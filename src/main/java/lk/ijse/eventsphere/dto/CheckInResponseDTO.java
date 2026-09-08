@@ -16,7 +16,10 @@ import java.time.LocalDateTime;
 public class CheckInResponseDTO {
     private Long ticketId;
     private String attendeeName;
+    private String attendeeEmail;
     private String seatNumber;
     private String eventTitle;
+    private String ticketTypeName;
+    private String bookingReference;
     private LocalDateTime checkedInAt;
 }
