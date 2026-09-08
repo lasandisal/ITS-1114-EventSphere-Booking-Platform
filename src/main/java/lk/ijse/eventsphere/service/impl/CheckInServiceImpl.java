@@ -35,15 +35,23 @@ public class CheckInServiceImpl implements CheckInService {
     @Override
     @Transactional
     public CheckInResponseDTO scanTicket(ScanRequestDTO request) {
-        // Cheap check first, before touching the database — rejects a
-        // garbage/forged payload without even locking a row.
-        if (!ticketSigningUtil.verifySignedPayload(request.getSignedPayload())) {
+        String payload = request.getSignedPayload() != null ? request.getSignedPayload().trim() : "";
+        if (payload.isBlank()) {
+            throw new InvalidTicketException("No ticket payload provided");
+        }
+
+        String ticketCode;
+        if (ticketSigningUtil.verifySignedPayload(payload)) {
+            ticketCode = ticketSigningUtil.extractTicketCode(payload);
+        } else if (payload.length() >= 8 && (payload.contains("-") || payload.matches("^[a-zA-Z0-9\\-]+$"))) {
+            // Support direct manual ticket code entry by gate staff
+            ticketCode = payload;
+        } else {
             throw new InvalidTicketException("This QR code is invalid or has been tampered with");
         }
-        String ticketCode = ticketSigningUtil.extractTicketCode(request.getSignedPayload());
 
         Ticket ticket = ticketRepository.lockByTicketCode(ticketCode)
-                .orElseThrow(() -> new InvalidTicketException("No matching ticket found"));
+                .orElseThrow(() -> new InvalidTicketException("No matching ticket found for code: " + ticketCode));
 
         Booking booking = ticket.getBookingItem().getBooking();
         Event event = booking.getEvent();
@@ -72,7 +80,7 @@ public class CheckInServiceImpl implements CheckInService {
 
         if (ticket.getStatus() == TicketStatus.USED) {
             // Still logged — CheckIn is an append-only audit trail of every
-            // scan attempt, not just successful ones (see entity comment).
+            // scan attempt, not just successful ones.
             checkInRepository.save(CheckIn.builder()
                     .ticket(ticket)
                     .checkedInBy(staff)
