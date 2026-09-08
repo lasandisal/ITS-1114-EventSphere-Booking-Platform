@@ -1,46 +1,85 @@
-# 🎟️ EventSphere – Centralized Event Discovery & Ticketing Platform
+# 🎟️ EventSphere Backend – Centralized Event Discovery & Ticketing Platform
 
-> **Coursework Module:** ITS 1114 – Advanced API Development  
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-21%20LTS-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 21" />
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.2.4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot" />
+  <img src="https://img.shields.io/badge/Spring%20Security-6.x-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white" alt="Spring Security" />
+  <img src="https://img.shields.io/badge/Thymeleaf-3.x-005F0F?style=for-the-badge&logo=thymeleaf&logoColor=white" alt="Thymeleaf" />
+  <img src="https://img.shields.io/badge/MySQL-8.0%2B-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL" />
+  <img src="https://img.shields.io/badge/PayHere-IPG%20Gateway-0052CC?style=for-the-badge" alt="PayHere" />
+  <img src="https://img.shields.io/badge/Brevo-Transactional%20SMTP-0B99FF?style=for-the-badge&logo=brevo&logoColor=white" alt="Brevo SMTP" />
+  <img src="https://img.shields.io/badge/Google%20Gemini-3.5%20Flash%20Lite-8E75B2?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini" />
+  <img src="https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Render-Cloud%20Hosted-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Render" />
+</p>
+
+> **Course:** Final Coursework  
+> **Module:** ITS 1114 – Advanced API Development  
 > **Institution:** Institute of Java and Software Engineering (IJSE)  
-> **Technology Stack:** Java 21 (LTS) • Spring Boot 3.2.4 • Spring Security 6 (JWT) • Spring Data JPA • Hibernate • MySQL (Local & Aiven Cloud) • PayHere IPG • Google Gemini API • Google ZXing • Brevo SMTP
+> **Author:** Lasandi Salwathura  
+> **Live API URL:** [https://its-1114-eventsphere-booking-platform.onrender.com](https://its-1114-eventsphere-booking-platform.onrender.com)  
+> **Frontend Application:** [https://eventsphere-webapp.vercel.app](https://eventsphere-webapp.vercel.app)
 
 ---
 
 ## 📖 System Overview
 
-**EventSphere** is an enterprise-grade RESTful ticketing and event discovery platform designed to replace fragmented, manual event coordination (spreadsheets, messaging apps, and social media posts) with a robust, scalable backend engine.
+**EventSphere** is an enterprise-grade RESTful event management and ticketing platform built to eliminate the fragmented, error-prone workflows common in traditional ticketing (manual spreadsheets, messaging apps, and insecure PDF tickets).
 
-The platform provides a centralized, secure ecosystem where:
-- **Attendees** can discover upcoming events, reserve multi-tier tickets with real-time cart holds, complete secure online payments, receive cryptographically signed QR tickets via email, and interact with an AI event concierge.
-- **Organizers** can apply for verified status, publish events, configure ticket tiers, monitor real-time attendee lists, and scan QR tickets at venue entry gates with fraud protection.
-- **Administrators** govern organizer verifications, oversee platform users and roles, and monitor gross revenue, ticket sales volume, and top-performing events.
+The backend engine provides a secure, high-concurrency API powering three primary user personas:
+- **Attendees (`ROLE_USER`):** Real-time event discovery with category and location filters, dynamic ticket selection with a 10-minute temporary inventory hold, PayHere IPG payment checkout, and cryptographically signed QR admission passes delivered via Brevo transactional email.
+- **Event Organizers (`ROLE_ORGANIZER`):** Business verification onboarding, custom venue creation, scheduling collision prevention, multi-tiered pricing management, real-time sales analytics, and high-speed gate admission scanning via QR camera verification.
+- **Platform Administrators (`ROLE_ADMIN`):** Verification and governance of organizer applications, user lifecycle moderation, platform-wide revenue audits, and global category/venue oversight.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Technology Stack Breakdown & Architecture Rationale
 
-| Layer / Subsystem | Technology | Details & Architecture Role |
+| Technology / Library | Version / Spec | Purpose & Architectural Justification |
 | :--- | :--- | :--- |
-| **Language & Runtime** | **Java 21 (LTS)** | Records, modern switch expressions, pattern matching, strong memory model. |
-| **Framework** | **Spring Boot 3.2.4** | REST controllers, dependency injection, transaction management, asynchronous scheduling. |
-| **Security & Auth** | **Spring Security 6 + JJWT 0.11.5** | Stateless authentication, RBAC, BCrypt password hashing (cost factor 12), and JWT filters. |
-| **Persistence & ORM** | **Spring Data JPA & Hibernate** | ORM mapping, pessimistic database locks, custom JPQL queries, connection pooling via **HikariCP**. |
-| **Database** | **MySQL 8+ / 9.x** | Relational data persistence with support for local instances and **Aiven Cloud Managed MySQL**. |
-| **Payment Gateway** | **PayHere IPG** | Online checkout processing with SHA-256 checkout hashes and MD5 webhook signature verification. |
-| **Artificial Intelligence** | **Google Gemini API** (`gemini-3.5-flash-lite`) | Natural language event assistant using server-side tool/function calling with strict safety guardrails. |
-| **QR Code Engine** | **Google ZXing 3.5.3** | High-resolution PNG QR generation with **HMAC-SHA256 cryptographic signatures**. |
-| **Email Service** | **JavaMailSender + Brevo SMTP** | Asynchronous (`@Async`) HTML emails: registration OTP, password reset, receipts, and attendee passes. |
-| **Build & Tooling** | **Maven 3.8+**, **Lombok**, **spring-dotenv** | Automated dependency management, boilerplate reduction, and `.env` configuration loading. |
+| **Java Platform** | **Java 21 (LTS)** | Leverages modern LTS language features (Pattern Matching, Sealed Classes, Records, and enhanced switch expressions) alongside high-throughput memory management. |
+| **Framework** | **Spring Boot 3.2.4** | Core inversion-of-control (IoC) container, REST controllers, declarative transaction management (`@Transactional`), and automated task scheduling (`@EnableScheduling`). |
+| **Security** | **Spring Security 6 + JJWT 0.11.5** | Stateless JWT authentication filter (`OncePerRequestFilter`), role-based endpoint guards (`@PreAuthorize`), and BCrypt password hashing (cost factor 12). |
+| **Persistence / ORM** | **Spring Data JPA & Hibernate** | Relational mapping for 15 domain entities, pessimistic database row locking, custom JPQL queries, and HikariCP connection pooling. |
+| **Database** | **MySQL 8+ (Local & Aiven Cloud)** | ACID-compliant relational storage with strict foreign keys, transactional boundaries, and row-level locking support. |
+| **Template Engine** | **Spring Boot Thymeleaf 3.x** | Decouples HTML email presentation from Java business logic. Provides auto-escaping to prevent XSS, designer previewability, and dynamic loop binding. |
+| **Transactional Email** | **Brevo (formerly Sendinblue) SMTP** | Cloud-native transactional mail delivery on port 587 (STARTTLS). Bypasses personal SMTP restrictions, ensures high inbox deliverability, and avoids cloud IP blacklisting. |
+| **Payment Gateway** | **PayHere IPG** | Central Bank of Sri Lanka (CBSL) approved internet payment gateway with HMAC/MD5 callback signature verification and idempotent webhook processing. |
+| **Artificial Intelligence** | **Google Gemini API (`gemini-3.5-flash-lite`)** | Conversational event assistant operating with server-side Function/Tool Calling (`search_events`, `get_event_details`, `get_my_bookings`) restricted to read-only queries. |
+| **QR Code Engine** | **Google ZXing 3.5.3** | Generates high-density PNG QR code byte arrays signed with **HMAC-SHA256** signatures to guarantee ticket authenticity at venue gates. |
+| **Containerization** | **Docker (Eclipse Temurin 21 JRE)** | Multi-stage production container build resulting in an optimized, minimal Linux container deployed on Render. |
+
+---
+
+## 💌 Why Brevo SMTP & Why Thymeleaf? (Engineering Deep-Dive)
+
+### 1. Why Brevo SMTP over Standard Gmail?
+In local development, many developers configure `smtp.gmail.com` with a personal Google App Password. However, deploying a production SaaS backend on cloud providers (Render, AWS, DigitalOcean) using personal Gmail SMTP fails for several critical reasons:
+- **Cloud IP Blacklisting:** Cloud hosting platforms share IP pools. Major mail servers (Google, Microsoft) frequently flag or throttle outbound SMTP traffic emerging directly from cloud hosting ranges.
+- **Strict Personal Rate Limits:** Gmail caps personal accounts at 100–500 emails/day. In an event platform where a single order can dispatch 4+ emails (purchaser receipt + individual attendee passes + registration OTPs), personal limits are breached instantly.
+- **Account Suspensions:** Automating transaction receipts through personal Gmail accounts violates Google's Acceptable Use Policy and risks sudden credential revocation.
+- **The Brevo Advantage:**
+  - **Dedicated Transactional Infrastructure:** Brevo provides authenticated relay infrastructure configured with proper SPF, DKIM, and DMARC alignment.
+  - **Port 587 STARTTLS Support:** Fully compatible with Spring Boot's `JavaMailSender` and cloud hosting firewall policies.
+  - **Generous Free Tier:** 300 free transactional emails per day with zero credit card required, providing professional delivery for coursework and production demos.
+  - **Comprehensive Audit Logs:** Web dashboard displays real-time delivery status, opens, bounces, and latency metrics.
+
+### 2. Why Thymeleaf Templates over In-Code HTML Strings?
+Earlier prototypes assembled email markup using string concatenations (`+ "<div>" + ...`). This was replaced with **Thymeleaf HTML templates** under `src/main/resources/templates/mail/`:
+- **Separation of Concerns (SoC):** Java service classes (`EmailServiceImpl.java`) focus purely on transaction boundaries, MIME headers, and email dispatch, leaving presentation markup in clean `.html` files.
+- **Security & Auto-Escaping:** Thymeleaf automatically sanitizes and escapes dynamic parameters (`th:text="${var}"`), eliminating HTML injection and XSS vulnerabilities.
+- **Designer & Tooling Friendly:** Email templates can be opened and styled in standard HTML/CSS editors with full syntax highlighting, CSS linting, and email-client previewability.
+- **Maintainability:** Changing an email logo, adjusting typography, or updating color schemes requires zero Java code recompilation.
 
 ---
 
 ## 🏛️ System Architecture
 
-EventSphere implements a strict **three-tier layered architecture**:
+EventSphere strictly adheres to a **three-tier layered architecture**:
 
 ```
                              Client Applications
-                (Web Frontend / Mobile / Gate QR Scanner / Postman)
+               (Vercel Web App / Gate QR Scanner / Postman)
                                      │
                                      │ HTTPS / JSON + Bearer JWT
                                      ▼
@@ -65,7 +104,7 @@ EventSphere implements a strict **three-tier layered architecture**:
          ▼                  ▼                 ▼                  ▼
   ┌──────────────┐   ┌──────────────┐  ┌──────────────┐   ┌──────────────┐
   │ Google Gemini│   │ PayHere IPG  │  │  Brevo SMTP  │   │ Google ZXing │
-  │ AI Assistant │   │ Webhook IPG  │  │ Transactional│   │ QR Generator │
+  │ AI Assistant │   │ Webhook IPG  │  │  (Thymeleaf) │   │ QR Generator │
   └──────────────┘   └──────────────┘  └──────────────┘   └──────────────┘
          │
          ▼
@@ -83,9 +122,56 @@ EventSphere implements a strict **three-tier layered architecture**:
 
 ---
 
-## 🗄️ Database Entities & Relational Schema
+## 💡 Core Engineering Highlights
 
-The domain model consists of **15 core entities**:
+### 1. Anti-Overselling via Database Pessimistic Locking
+In popular events, hundreds of concurrent checkouts can trigger race conditions where two users purchase the final remaining seat simultaneously. EventSphere eliminates overselling using row-level pessimistic locking (`PESSIMISTIC_WRITE`):
+
+```java
+@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("SELECT t FROM TicketType t WHERE t.id = :id")
+Optional<TicketType> lockById(@Param("id") Long id);
+```
+During booking creation, Hibernate issues a `SELECT ... FOR UPDATE` query, locking the specific ticket type row for the microsecond duration of the transaction. Stock is validated and decremented safely before releasing the lock.
+
+### 2. 10-Minute Cart Hold & Automated Expiry Scheduler
+When an attendee selects tickets and proceeds to checkout:
+1. `createBooking()` sets status to `PENDING` and records `expiresAt = LocalDateTime.now().plusMinutes(10)`.
+2. Tickets are provisionally decremented so other attendees see real-time availability.
+3. **Background Scheduler:** Enabled via `@EnableScheduling` on `EventsphereApplication`, the `BookingExpiryScheduler` runs:
+   - On server startup (`initialDelay = 5000ms`) to immediately clear holds abandoned while the server was deploying or sleeping.
+   - Every 60 seconds (`fixedRate = 60000ms`) to automatically mark stale bookings as `EXPIRED` and return the held inventory to `ticket_types.available_quantity`.
+
+### 3. Duplicate Event & Venue Scheduling Collision Prevention
+EventSphere employs enterprise-grade collision detection in both `createEvent` and `updateEvent`:
+- **Organizer Duplicate Rule:** Prevents an organizer from accidentally creating multiple active events with the same title on the same calendar day using index-friendly day boundaries:
+  ```sql
+  SELECT COUNT(e) > 0 FROM Event e
+  WHERE e.organizer.id = :organizerId
+    AND LOWER(TRIM(e.title)) = LOWER(TRIM(:title))
+    AND e.startDatetime >= :startOfDay AND e.startDatetime <= :endOfDay
+    AND e.status != 'CANCELLED'
+    AND (:excludeEventId IS NULL OR e.id != :excludeEventId)
+  ```
+- **Venue Double-Booking Rule:** Enforces the mathematical interval collision condition across all active events sharing a physical venue:
+  $$\text{NewStart} < \text{ExistingEnd} \land \text{NewEnd} > \text{ExistingStart}$$
+  If another active event overlaps the selected venue window, the API immediately halts execution with an HTTP `409 Conflict`.
+
+### 4. Cryptographically Signed Gate Admission Passes (HMAC-SHA256)
+To prevent ticket counterfeiting and screenshot reuse:
+- The QR code contains a base64-encoded payload consisting of the unique ticket UUID combined with an **HMAC-SHA256 signature** generated using a server-side secret key:
+  $$\text{Payload} = \text{Base64Url}(\text{ticketCode} + ":" + \text{HMAC-SHA256}(\text{ticketCode}, \text{secret}))$$
+- When scanned at gate check-in (`/api/v1/organizer/check-in/scan`), the server recalculates and verifies the cryptographic hash in $O(1)$ time. Forged tickets are rejected immediately without database overhead.
+- Valid tickets transition to `USED` status. Duplicate scan attempts trigger an immediate `409 Conflict` (`TicketAlreadyUsedException`) and log the security violation.
+
+### 5. Idempotent PayHere Webhook Processing
+- PayHere dispatches payment status notifications to `/api/v1/payments/notify`.
+- The webhook endpoint verifies the MD5 checksum (`merchant_id + order_id + payhere_amount + payhere_currency + status_code + strtoupper(md5(merchant_secret))`).
+- **Idempotency Guarantee:** If PayHere retries the webhook due to network latency, the service detects that the booking is already `CONFIRMED`, returns HTTP 200 immediately, and avoids duplicate ticket generation or re-sending confirmation emails.
+
+---
+
+## 🗄️ Relational Entity-Relationship Diagram (15 Entities)
 
 ```
 User (1) ───────────< UserRoles >─────────── (N) Role
@@ -106,258 +192,258 @@ Payment (1) ──────── (N) PaymentLog
 User (1) ─────────── (N) PasswordResetToken
 ```
 
-### Entity Descriptions:
-1. **`User`**: Core identity entity storing credentials (BCrypt hash), contact details, status (`ACTIVE`, `INACTIVE`), email verification status, and OTP verification codes.
-2. **`Role`**: Role-based access control table (`ROLE_USER`, `ROLE_ORGANIZER`, `ROLE_ADMIN`).
-3. **`Organizer`**: Business identity linked 1-to-1 with `User`, containing business registration number (BRN), NIC/Passport, verification status (`PENDING`, `APPROVED`, `REJECTED`), and bio.
-4. **`Category`**: Event categories (e.g., *Technology*, *Music*, *Business*, *Workshops*).
-5. **`Venue`**: Event physical locations or virtual venues (name, address, city, max capacity).
-6. **`Event`**: Core event record storing title, description, banner URL, schedule dates, organizer reference, venue reference, and lifecycle status (`DRAFT`, `PUBLISHED`, `CANCELLED`).
-7. **`EventSchedule`**: Extended multi-session or recurring date schedules for complex events.
-8. **`TicketType`**: Tiers per event (e.g., *VIP*, *General Admission*, *Early Bird*) with unit price, total capacity, and available inventory.
-9. **`Booking`**: Order entity capturing status (`PENDING`, `CONFIRMED`, `CANCELLED`, `EXPIRED`), total amount, unique UUID booking reference, and cart hold expiry timestamp (`expiresAt`).
-10. **`BookingItem`**: Line item linking a booking to a ticket type, recording quantity, fixed unit price snapshot, and subtotal.
-11. **`Ticket`**: Individual issued ticket instance with UUID ticket code, seat/zone number, attendee name, attendee email, issued timestamp, and entry status (`VALID`, `USED`, `CANCELLED`).
-12. **`Payment`**: Payment record capturing transaction status (`PENDING`, `SUCCESS`, `FAILED`), merchant order ID, currency, amount, and payment provider (`PAYHERE`).
-13. **`PaymentLog`**: Immutable audit log of every incoming webhook payload received from the payment gateway.
-14. **`CheckIn`**: Append-only gate check-in log capturing every scan attempt, timestamp, gate staff user reference, and location notes.
-15. **`PasswordResetToken`**: Time-limited 6-digit OTP tokens for secure password recovery.
-
 ---
 
-## 💡 Key Engineering Highlights
+## 📁 Backend Repository Directory Structure
 
-### 1. Anti-Overselling & Pessimistic Concurrency Locking
-Under heavy concurrent traffic, standard database reads allow two users to simultaneously purchase the final remaining ticket. EventSphere prevents race conditions using **Pessimistic Write Locking** (`LockModeType.PESSIMISTIC_WRITE`) at the database row level:
-```java
-@Lock(LockModeType.PESSIMISTIC_WRITE)
-@Query("select t from TicketType t where t.id = :id")
-Optional<TicketType> lockById(@Param("id") Long id);
 ```
-During checkout, the database row is locked for the duration of the transaction (`SELECT ... FOR UPDATE`), validated, decremented, and safely committed.
-
-### 2. 10-Minute Cart Hold & Automated Expiry Scheduler
-When an attendee initiates checkout:
-- Tickets are held provisionally with a status of `PENDING` and a 10-minute time-to-live (`expiresAt = now + 10 mins`).
-- A background worker (`BookingExpiryScheduler`) fires every 60 seconds (`@Scheduled(fixedRate = 60000)`).
-- Stale pending bookings past their TTL are automatically set to `EXPIRED`, and their held quantities are returned to the ticket pool.
-
-### 3. Anti-Counterfeit HMAC-SHA256 QR Passes
-Tickets are protected against gate forgery attacks:
-- The QR payload contains a Base64 URL-safe token encoding the ticket code and an **HMAC-SHA256 cryptographic signature** computed using a server secret:
-  $$\text{Payload} = \text{Base64Url}(\text{ticketCode} + ":" + \text{HMAC-SHA256}(\text{ticketCode}, \text{secret}))$$
-- Gate staff scan tickets at `/api/v1/organizer/check-in/scan`. The signature is verified in memory in $O(1)$ time. Forged tokens are rejected before hitting the database.
-- A ticket can only be used once; duplicate scan attempts are rejected with a `409 Conflict` (`TicketAlreadyUsedException`) while recording an audit entry.
-
-### 4. Automated PayHere IPG & Idempotent Webhooks
-- **Initiation**: Generates PayHere parameters and an MD5/SHA-256 checkout signature.
-- **Asynchronous Webhook (`/api/v1/payments/notify`)**: PayHere sends server-to-server payment notifications. EventSphere validates the callback signature (`md5sig`), transitions payment to `SUCCESS`, booking to `CONFIRMED`, marks tickets as issued, and triggers email delivery.
-- **Idempotency**: Late or duplicate webhook deliveries are safely acknowledged without double-crediting orders or re-issuing tickets.
-
-### 5. Multi-Recipient Transactional Emails
-Using Spring's `@Async` JavaMailSender with Brevo SMTP:
-- **Master Order Receipt**: Dispatched to the primary purchaser with an itemized payment summary and all ticket QR passes inline.
-- **Individual Guest Passes**: Sent directly to distinct guest attendees with their personal QR code pass.
-- **OTP Verification**: Dispatches 6-digit registration and password reset codes.
-
-### 6. Google Gemini AI Assistant with Function Calling
-An interactive AI assistant (`gemini-3.5-flash-lite`) integrated server-side:
-- **Tools**:
-  - `search_events(keyword, category)`: Discovers published events matching criteria.
-  - `get_event_details(eventId)`: Retrieves real-time venue, schedule, and ticket tier availability.
-  - `get_my_bookings()`: Fetches the authenticated user's active booking history.
-- **Safety Guardrail**: The assistant is strictly read-only. It has no tools to modify bookings or perform payments, preventing unauthorized model-driven financial mutations.
+eventsphere_backend/
+├── src/
+│   ├── main/
+│   │   ├── java/lk/ijse/eventsphere/
+│   │   │   ├── EventsphereApplication.java        # Main entry point (@EnableScheduling, @EnableAsync)
+│   │   │   ├── config/                           # SecurityConfig, CorsConfig, Schedulers, Properties
+│   │   │   │   ├── BookingExpiryScheduler.java   # 60-second recurring hold expiry scheduler
+│   │   │   │   ├── PayHereProperties.java        # Strongly-typed PayHere config
+│   │   │   │   └── SecurityConfig.java           # Spring Security 6 filter chain & CORS rules
+│   │   │   ├── controller/                       # REST endpoints (Auth, Events, Bookings, Payments, etc.)
+│   │   │   │   ├── AdminController.java          # Admin governance, analytics, approvals
+│   │   │   │   ├── AssistantController.java      # Gemini AI chat concierge
+│   │   │   │   ├── AuthController.java           # Login, register, OTP verification
+│   │   │   │   ├── BookingController.java        # Booking creation and user tickets
+│   │   │   │   ├── EventController.java          # Public event discovery & catalog
+│   │   │   │   ├── OrganizerController.java      # Organizer events, tiers, check-in scanning
+│   │   │   │   ├── OrganizerVenueController.java # Organizer custom venue registration
+│   │   │   │   └── PaymentController.java        # PayHere checkout initiate & webhook callback
+│   │   │   ├── dto/                              # Request & Response Data Transfer Objects
+│   │   │   ├── entity/                           # 15 JPA Domain Entities
+│   │   │   ├── enums/                            # RoleName, BookingStatus, EventStatus, etc.
+│   │   │   ├── exception/                        # GlobalExceptionHandler & domain exceptions
+│   │   │   ├── repository/                       # Spring Data JPA interfaces with custom JPQL queries
+│   │   │   ├── security/                         # JwtAuthFilter, JwtTokenProvider, CurrentUserProvider
+│   │   │   ├── service/                          # Service interfaces and implementations
+│   │   │   │   └── impl/
+│   │   │   │       ├── BookingServiceImpl.java   # Pessimistic locking & hold management
+│   │   │   │       ├── EmailServiceImpl.java     # Thymeleaf-based multi-recipient mail service
+│   │   │   │       ├── EventServiceImpl.java     # Event lifecycle, duplicates, collisions
+│   │   │   │       └── GeminiAssistantService.java # AI tool execution engine
+│   │   │   └── util/                             # PayHereSignatureUtil, TicketSigningUtil, QrCodeGenerator
+│   │   └── resources/
+│   │       ├── application.properties            # Core Spring configuration
+│   │       ├── application-local.properties      # Local development profile
+│   │       ├── application-prod.properties       # Render cloud production profile
+│   │       ├── http/                             # HTTP Client test scripts (01-auth to 07-payment)
+│   │       └── templates/mail/                   # Thymeleaf HTML Email Templates
+│   │           ├── otp-verification.html         # User sign-up verification OTP
+│   │           ├── password-reset-otp.html       # Password recovery OTP
+│   │           ├── order-receipt.html            # Master purchaser order receipt & passes
+│   │           └── ticket-pass.html              # Individual attendee admission pass
+│   └── test/                                     # MockMvc integration tests & unit suites
+├── Dockerfile                                    # Multi-stage production container definition
+├── pom.xml                                       # Maven build file with all dependencies
+└── README.md                                     # Backend documentation
+```
 
 ---
 
-## 📡 Complete REST API Catalog
+## 📡 REST API Catalog Overview
 
-All endpoints return unified JSON responses wrapped in `CommonResponse<T>` (`code`, `message`, `data`).
+All endpoints return a standardized envelope response:
+```json
+{
+  "code": 200,
+  "status": 200,
+  "message": "Operation completed successfully",
+  "data": { ... }
+}
+```
 
-### 1. Authentication & Account (`/api/v1/auth`)
+### 1. Authentication & Security (`/api/v1/auth`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/auth/register` | Public | Register new user; dispatches 6-digit verification OTP |
+| `POST` | `/api/v1/auth/register` | Public | Register account; triggers Brevo verification OTP email |
 | `POST` | `/api/v1/auth/login` | Public | Authenticate user; returns JWT token and role profile |
-| `POST` | `/api/v1/auth/verify-otp` | Public | Verify email OTP and activate account |
+| `POST` | `/api/v1/auth/verify-otp` | Public | Activate account using 6-digit email OTP |
 | `POST` | `/api/v1/auth/resend-otp` | Public | Resend account verification OTP email |
-| `POST` | `/api/v1/auth/forgot-password` | Public | Request 6-digit password reset OTP email |
-| `POST` | `/api/v1/auth/reset-password` | Public | Reset password using valid OTP |
+| `POST` | `/api/v1/auth/forgot-password` | Public | Request password reset OTP |
+| `POST` | `/api/v1/auth/reset-password` | Public | Set new password using valid OTP code |
 
-### 2. User Profile (`/api/v1/users`)
+### 2. Event Discovery & Catalog (`/api/v1/events`, `/api/v1/categories`, `/api/v1/venues`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/users/me` | Authenticated | Retrieve current user's profile |
-| `PUT` | `/api/v1/users/profile` | Authenticated | Update user's name and phone number |
-| `PUT` | `/api/v1/users/password` | Authenticated | Change current password |
+| `GET` | `/api/v1/events` | Public | Paginated event list with search keyword, category, and date filtering |
+| `GET` | `/api/v1/events/{id}` | Public | Full event details with live ticket tier availability |
+| `GET` | `/api/v1/categories` | Public | Retrieve all platform event categories |
+| `GET` | `/api/v1/venues` | Public | List all available venues |
 
-### 3. Public Discovery (`/api/v1/events`, `/api/v1/categories`, `/api/v1/venues`)
+### 3. Bookings & Inventory (`/api/v1/bookings`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/events` | Public | Paginated list of published events with search and filters |
-| `GET` | `/api/v1/events/{id}` | Public | Event details with live ticket tiers and remaining stock |
-| `GET` | `/api/v1/categories` | Public | List all event categories |
-| `GET` | `/api/v1/venues` | Public | List all venues |
+| `POST` | `/api/v1/bookings` | `USER`, `ORGANIZER`, `ADMIN` | Reserve tickets with 10-minute hold (pessimistic lock) |
+| `GET` | `/api/v1/bookings/{id}` | Authenticated Owner | Retrieve booking summary and attendee tickets |
+| `GET` | `/api/v1/bookings` | Authenticated Owner | Paginated user bookings by tab (`upcoming`, `past`, `cancelled`) |
+| `PATCH`| `/api/v1/bookings/{id}/cancel`| Authenticated Owner | Cancel pending booking and release held inventory |
 
-### 4. Booking System (`/api/v1/bookings`)
+### 4. Payments & Webhooks (`/api/v1/payments`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/bookings` | Authenticated | Reserve tickets with 10-min hold (pessimistic lock) |
-| `GET` | `/api/v1/bookings/{id}` | Authenticated | Retrieve booking by ID (ownership verified) |
-| `GET` | `/api/v1/bookings` | Authenticated | Paginated list of user's bookings (`upcoming`, `past`, `cancelled`) |
-| `PATCH`| `/api/v1/bookings/{id}/cancel` | Authenticated | Cancel pending booking and release held inventory |
+| `POST` | `/api/v1/payments/initiate/{bookingId}` | Authenticated Owner | Generate PayHere checkout parameters and cryptographic hash |
+| `POST` | `/api/v1/payments/notify` | Public (PayHere IPG) | Webhook callback; validates MD5 signature, confirms booking, issues passes |
 
-### 5. Payments & Webhooks (`/api/v1/payments`)
+### 5. Organizer Operations (`/api/v1/organizer`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/payments/test-checkout` | Public | Check PayHere parameters in sandbox environment |
-| `POST` | `/api/v1/payments/initiate/{bookingId}` | Authenticated | Generate checkout hash and payment parameters |
-| `POST` | `/api/v1/payments/notify` | Public (IPG) | PayHere webhook callback; confirms payment and issues tickets |
-
-### 6. Organizer Operations (`/api/v1/organizer`)
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/organizer/apply` | Authenticated | Submit application for organizer verification |
-| `GET` | `/api/v1/organizer/profile` | Authenticated | View organizer profile and approval status |
-| `PUT` | `/api/v1/organizer/profile` | `ORGANIZER` | Update organizer business details |
-| `POST` | `/api/v1/organizer/events` | `ORGANIZER`, `ADMIN` | Create new event draft |
-| `POST` | `/api/v1/organizer/events/{id}/ticket-types` | `ORGANIZER`, `ADMIN` | Add ticket tiers to an event |
+| `POST` | `/api/v1/organizer/apply` | `USER` | Submit business verification application (BRN, NIC/Passport) |
+| `GET` | `/api/v1/organizer/profile` | `ORGANIZER` | View organizer verification profile and status |
+| `POST` | `/api/v1/organizer/venues` | `ORGANIZER`, `ADMIN` | Register a new custom venue for immediate event selection |
+| `POST` | `/api/v1/organizer/events` | `ORGANIZER`, `ADMIN` | Create event with duplicate title & venue collision checks |
+| `POST` | `/api/v1/organizer/events/{id}/ticket-types` | `ORGANIZER`, `ADMIN` | Configure ticket tiers (name, price, capacity) |
 | `PUT` | `/api/v1/organizer/events/{id}` | `ORGANIZER`, `ADMIN` | Update event information |
-| `PATCH`| `/api/v1/organizer/events/{id}/publish` | `ORGANIZER`, `ADMIN` | Publish event for public discovery |
-| `PATCH`| `/api/v1/organizer/events/{id}/cancel` | `ORGANIZER`, `ADMIN` | Cancel event and halt sales |
-| `GET` | `/api/v1/organizer/events/my-events` | `ORGANIZER`, `ADMIN` | Paginated list of organizer's events |
-| `GET` | `/api/v1/organizer/events/{id}/bookings` | `ORGANIZER`, `ADMIN` | View attendee booking list for an event |
-| `POST` | `/api/v1/organizer/check-in/scan` | `ORGANIZER`, `ADMIN` | Scan attendee QR pass and verify entry |
+| `PATCH`| `/api/v1/organizer/events/{id}/publish` | `ORGANIZER`, `ADMIN` | Publish draft event for public booking |
+| `GET` | `/api/v1/organizer/events/my-events` | `ORGANIZER`, `ADMIN` | List organizer's managed events |
+| `GET` | `/api/v1/organizer/events/{id}/bookings` | `ORGANIZER`, `ADMIN` | Retrieve attendee manifests and ticket sales data |
+| `POST` | `/api/v1/organizer/check-in/scan` | `ORGANIZER`, `ADMIN` | Verify cryptographic QR pass and admit attendee |
 
-### 7. AI Assistant (`/api/v1/assistant`)
+### 6. AI Event Concierge (`/api/v1/assistant`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/assistant/chat` | Public / Auth | Chat with Gemini AI concierge for event discovery |
+| `POST` | `/api/v1/assistant/chat` | Public / Authenticated | Chat with Google Gemini AI assistant for real-time recommendations |
 
-### 8. Administration (`/api/v1/admin`)
+### 7. Platform Administration (`/api/v1/admin`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/admin/analytics/overview` | `ADMIN` | Platform metrics (revenue, tickets sold, top events/organizers) |
-| `GET` | `/api/v1/admin/users` | `ADMIN` | View all platform users and assigned roles |
-| `PATCH`| `/api/v1/admin/users/{userId}/promote-to-admin` | `ADMIN` | Promote a user to Administrator |
-| `GET` | `/api/v1/admin/organizers/pending` | `ADMIN` | View pending organizer applications |
+| `GET` | `/api/v1/admin/analytics/overview` | `ADMIN` | Global platform metrics (gross revenue, tickets sold, top events) |
+| `GET` | `/api/v1/admin/users` | `ADMIN` | Manage user accounts, status, and role assignments |
+| `PATCH`| `/api/v1/admin/users/{userId}/promote-to-admin` | `ADMIN` | Promote a user account to Administrator role |
+| `GET` | `/api/v1/admin/organizers/pending` | `ADMIN` | View pending organizer business verification submissions |
 | `PATCH`| `/api/v1/admin/organizers/{id}/verify` | `ADMIN` | Approve organizer application (grants `ROLE_ORGANIZER`) |
-| `DELETE`| `/api/v1/admin/organizers/{id}/reject` | `ADMIN` | Reject organizer application |
+| `DELETE`| `/api/v1/admin/organizers/{id}/reject` | `ADMIN` | Reject organizer application with feedback |
 | `POST` | `/api/v1/admin/categories` | `ADMIN` | Create new event category |
-| `PUT`  | `/api/v1/admin/categories/{id}` | `ADMIN` | Update event category |
-| `DELETE`| `/api/v1/admin/categories/{id}` | `ADMIN` | Delete event category |
-| `POST` | `/api/v1/admin/venues` | `ADMIN` | Create new venue |
-| `PUT`  | `/api/v1/admin/venues/{id}` | `ADMIN` | Update venue details |
-| `DELETE`| `/api/v1/admin/venues/{id}` | `ADMIN` | Delete venue |
+| `POST` | `/api/v1/admin/venues` | `ADMIN` | Create global venue record |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started & Local Setup
 
 ### Prerequisites
-- **Java Development Kit (JDK):** Version 21 (LTS)
-- **Build Tool:** Apache Maven 3.8+ (or included `mvnw`)
-- **Database:** MySQL Server 8.0+ or MySQL 9.x (Local or Aiven Cloud)
-- **External Accounts / Keys:**
-  - Google Gemini API Key
-  - PayHere Merchant Credentials (Sandbox / Live)
-  - Brevo SMTP Key (or Gmail App Password)
+- **Java 21 (LTS):** OpenJDK or Eclipse Temurin
+- **Maven 3.8+:** Or use the included `mvnw.cmd` / `mvnw` wrapper
+- **MySQL 8.0+:** Local server or cloud managed database (Aiven)
+- **Brevo SMTP Account:** For transactional email delivery (Free tier available)
+- **PayHere Merchant Account:** Sandbox credentials for testing payments
+- **Google Gemini API Key:** For the AI assistant integration
 
 ---
 
-### Installation & Configuration
+### Step-by-Step Installation
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/eventsphere.git
-   cd eventsphere/eventsphere_backend
+   git clone https://github.com/lasandisal/ITS-1114-EventSphere-Booking-Platform.git
+   cd ITS-1114-EventSphere-Booking-Platform/eventsphere_backend
    ```
 
-2. **Configure Environment Variables:**
-   Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Populate `.env` with your actual credentials:**
+2. **Configure Environment Variables (`.env`):**
+   Copy `.env.example` to `.env` in the root of `eventsphere_backend`:
    ```properties
    # Server Port
-   PORT=8080
+   PORT=7080
 
-   # Database (Local or Aiven Managed MySQL)
-   DB_URL=jdbc:mysql://localhost:3306/eventsphere_db?createDatabaseIfNotExist=true&useSSL=false
+   # Active Profile
+   SPRING_PROFILES_ACTIVE=local
+
+   # Database Connection (Local MySQL or Aiven Cloud)
+   DB_URL=jdbc:mysql://localhost:3306/eventsphere_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
    DB_USERNAME=root
    DB_PASSWORD=your_mysql_password
 
-   # Security & Cryptography
-   JWT_SECRET=your_jwt_secret_key_at_least_32_bytes_long
+   # JWT Security
+   JWT_SECRET=your_super_secret_jwt_key_at_least_32_characters_long_min
    JWT_EXPIRATION_MS=86400000
-   TICKET_QR_SECRET=your_ticket_qr_signing_secret_key
 
-   # Google Gemini AI API
-   GEMINI_API_KEY=your_gemini_api_key
+   # Ticket Cryptographic QR Signing
+   TICKET_QR_SECRET=your_ticket_qr_signing_secret_key_random_string
 
-   # SMTP Email (Brevo / SendGrid / Gmail)
+   # Brevo Transactional SMTP
    MAIL_HOST=smtp-relay.brevo.com
    MAIL_PORT=587
-   MAIL_USERNAME=your_brevo_smtp_login
-   MAIL_PASSWORD=your_brevo_smtp_password
+   MAIL_USERNAME=your_brevo_login_email
+   MAIL_PASSWORD=your_brevo_smtp_master_key
    MAIL_SENDER_EMAIL=eventsphere.tickets@gmail.com
 
-   # PayHere IPG
+   # PayHere IPG Sandbox
    PAYHERE_MODE=sandbox
    PAYHERE_MERCHANT_ID=your_merchant_id
    PAYHERE_MERCHANT_SECRET=your_merchant_secret
    PAYHERE_RETURN_URL=http://localhost:5500/pages/my-bookings.html
-   PAYHERE_CANCEL_URL=http://localhost:5500/pages/my-bookings.html
-   PAYHERE_NOTIFY_URL=http://localhost:8080/api/v1/payments/notify
+   PAYHERE_CANCEL_URL=http://localhost:5500/pages/booking.html
+   PAYHERE_NOTIFY_URL=http://localhost:7080/api/v1/payments/notify
 
-   # Seeded Default Admin Account
-   ADMIN_EMAIL=eventsphere.tickets@gmail.com
-   ADMIN_PASSWORD=ChangeMe123!
+   # Google Gemini API
+   GEMINI_API_KEY=your_gemini_api_key
 
    # CORS Allowed Origins
-   APP_CORS_ALLOWED_ORIGINS=http://localhost:5500,http://localhost:3000,http://127.0.0.1:5500
+   APP_CORS_ALLOWED_ORIGINS=http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,https://eventsphere-webapp.vercel.app
    ```
 
-4. **Build the Application:**
+3. **Build the Backend:**
    ```bash
-   mvn clean install
+   ./mvnw clean install
    ```
 
-5. **Run the Application:**
+4. **Run the Application:**
    ```bash
-   mvn spring-boot:run
+   ./mvnw spring-boot:run
    ```
-   *The backend starts at `http://localhost:8080`.*
+   *The server initializes on port `7080` (or the configured `PORT`).*
 
 ---
 
-## 🧪 Testing with HTTP Client
+## 🐳 Docker Deployment
 
-Pre-configured HTTP request files are located in `src/main/resources/http/`:
-- `01-auth.http`: Registration, OTP verification, login, password reset
-- `02-categories.http`: Category CRUD operations
-- `04-venues.http`: Venue CRUD operations
-- `03-events.http`: Event creation, ticket tier additions, publishing
-- `06-userTOorganizer.http`: Organizer applications, admin approvals
-- `05-booking.http`: Ticket booking, inventory locking, cancellations
-- `07-payment.http`: PayHere checkout initiation, webhook notification simulations
+The application includes an optimized multi-stage `Dockerfile`:
 
----
+```bash
+# 1. Build the Docker image
+docker build -t eventsphere-backend:latest .
 
-## 🔮 Future Enhancements
-
-- [ ] Real-time push notifications via WebSockets.
-- [ ] Attendee seat-selection map for assigned seating venues.
-- [ ] Native iOS & Android companion mobile applications for gate scanners.
-- [ ] Offline gate scanner mode with local cryptographic signature verification.
-- [ ] Discount codes and multi-ticket promotional bundles.
+# 2. Run the Docker container
+docker run -p 7080:7080 --env-file .env eventsphere-backend:latest
+```
 
 ---
 
-## 👨‍💻 Project Information
+## 🧪 Automated Testing
 
-- **Module:** ITS 1114 – Advanced API Development  
-- **Institution:** Institute of Java and Software Engineering (IJSE)  
-- **License:** Educational Coursework License (IJSE)
+The test suite validates context configuration, collision rejection, custom venue onboarding, scheduled booking expiration, and Thymeleaf template rendering:
+
+```bash
+# Run all integration and unit tests
+./mvnw test
+```
+
+All 5 core test suites run against an in-memory/isolated MySQL configuration and execute with 100% success:
+- `contextLoads`: Verifies Spring context, scheduling, and async thread initialization.
+- `testOrganizerCreateCustomVenue`: Validates custom venue registration endpoint (`201 Created`).
+- `testDuplicateEventAndVenueCollisionRejection`: Tests duplicate event title and venue interval overlap rejection (`409 Conflict`).
+- `testStaleBookingExpiryAndInventoryRestoration`: Validates that expired `PENDING` bookings release held tickets back to available stock.
+- `testEmailThymeleafTemplatesRenderProperly`: Validates that all 4 Thymeleaf email templates render without error and interpolate context variables properly.
+
+---
+
+## 🔒 Security & Privacy Standards
+
+- **Zero Secret Exposure:** Backend credentials (JWT secret, DB password, Gemini API key, Brevo SMTP keys, PayHere secrets) are strictly managed via environment variables and never committed to version control.
+- **Salted Password Hashing:** User passwords are encrypted using BCrypt with a cost factor of 12.
+- **PCI-DSS Compliance via PayHere:** The platform never collects, transmits, or stores cardholder credit/debit card numbers. All payments occur within PayHere's secure hosted payment gateway.
+- **Stateless RBAC:** APIs are secured with stateless JWT tokens verified on every request using custom security filters with role checks.
+- **Replay-Proof Gate Scanning:** Tickets transition immediately to `USED` upon gate check-in with immutable audit logs recording the scan time, staff user, and location notes.
+
+---
+
+## 🎓 Academic Module Information
+
+- **Coursework:** Final Coursework
+- **Module:** ITS 1114 – Advanced API Development
+- **Institution:** Institute of Java and Software Engineering (IJSE)
+- **Author:** Lasandi Salwathura
