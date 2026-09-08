@@ -52,6 +52,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- Thymeleaf (HTML Email Templates) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
         <!-- MySQL Connector (Works for local MySQL & Cloud Aiven MySQL) -->
         <dependency>
             <groupId>com.mysql</groupId>

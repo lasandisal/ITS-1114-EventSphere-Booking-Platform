@@ -13,9 +13,14 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import lk.ijse.eventsphere.service.TicketEmailItem;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,6 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class EventsphereApplicationTests {
+
+    @Autowired
+    private ITemplateEngine templateEngine;
 
     @Autowired
     private MockMvc mockMvc;
@@ -182,5 +190,79 @@ class EventsphereApplicationTests {
         Booking reloadedBooking = bookingRepository.findById(savedBooking.getId()).orElseThrow();
         Assertions.assertEquals(BookingStatus.EXPIRED, reloadedBooking.getStatus(),
                 "Booking status must transition to EXPIRED");
+    }
+
+    @Test
+    void testEmailThymeleafTemplatesRenderProperly() {
+        // 1. Verify OTP Verification Template
+        Context otpCtx = new Context();
+        otpCtx.setVariable("name", "Lasandi");
+        otpCtx.setVariable("otp", "789123");
+        String otpHtml = templateEngine.process("mail/otp-verification", otpCtx);
+        Assertions.assertNotNull(otpHtml);
+        Assertions.assertTrue(otpHtml.contains("789123"));
+        Assertions.assertTrue(otpHtml.contains("Lasandi"));
+        Assertions.assertTrue(otpHtml.contains("ACCOUNT VERIFICATION"));
+
+        // 2. Verify Password Reset OTP Template
+        Context resetCtx = new Context();
+        resetCtx.setVariable("name", "Lasandi");
+        resetCtx.setVariable("otp", "456789");
+        String resetHtml = templateEngine.process("mail/password-reset-otp", resetCtx);
+        Assertions.assertNotNull(resetHtml);
+        Assertions.assertTrue(resetHtml.contains("456789"));
+        Assertions.assertTrue(resetHtml.contains("PASSWORD RESET CODE"));
+
+        // 3. Verify Master Order Receipt Template
+        TicketEmailItem item1 = TicketEmailItem.builder()
+                .ticketCode("TC-001")
+                .ticketTypeName("VIP")
+                .attendeeName("Alice Smith")
+                .seatNumber("Row A, 12")
+                .eventDate("Oct 10, 2026")
+                .eventTime("07:00 PM")
+                .venueName("Grand Arena")
+                .venueAddress("456 Ocean Drive")
+                .qrPng(new byte[]{1, 2, 3})
+                .build();
+
+        Context receiptCtx = new Context();
+        receiptCtx.setVariable("name", "Lasandi");
+        receiptCtx.setVariable("eventTitle", "Glow EDM Night");
+        receiptCtx.setVariable("bookingReference", "REF-EDM-999");
+        receiptCtx.setVariable("eventDate", "Oct 10, 2026");
+        receiptCtx.setVariable("eventTime", "07:00 PM");
+        receiptCtx.setVariable("venueName", "Grand Arena");
+        receiptCtx.setVariable("venueAddress", "456 Ocean Drive");
+        receiptCtx.setVariable("totalTickets", 1);
+        receiptCtx.setVariable("currency", "LKR");
+        receiptCtx.setVariable("formattedAmount", "4500.00");
+        receiptCtx.setVariable("tickets", List.of(item1));
+
+        String receiptHtml = templateEngine.process("mail/order-receipt", receiptCtx);
+        Assertions.assertNotNull(receiptHtml);
+        Assertions.assertTrue(receiptHtml.contains("Glow EDM Night"));
+        Assertions.assertTrue(receiptHtml.contains("REF-EDM-999"));
+        Assertions.assertTrue(receiptHtml.contains("Alice Smith"));
+        Assertions.assertTrue(receiptHtml.contains("cid:receipt_qr0"));
+
+        // 4. Verify Individual Ticket Pass Template
+        Context passCtx = new Context();
+        passCtx.setVariable("name", "Alice Smith");
+        passCtx.setVariable("eventTitle", "Glow EDM Night");
+        passCtx.setVariable("bookingReference", "REF-EDM-999");
+        passCtx.setVariable("eventDate", "Oct 10, 2026");
+        passCtx.setVariable("eventTime", "07:00 PM");
+        passCtx.setVariable("venueName", "Grand Arena");
+        passCtx.setVariable("venueAddress", "456 Ocean Drive");
+        passCtx.setVariable("ticketTier", "VIP");
+        passCtx.setVariable("ticket", item1);
+
+        String passHtml = templateEngine.process("mail/ticket-pass", passCtx);
+        Assertions.assertNotNull(passHtml);
+        Assertions.assertTrue(passHtml.contains("Glow EDM Night"));
+        Assertions.assertTrue(passHtml.contains("Alice Smith"));
+        Assertions.assertTrue(passHtml.contains("cid:guest_qr"));
+        Assertions.assertTrue(passHtml.contains("Row A, 12"));
     }
 }

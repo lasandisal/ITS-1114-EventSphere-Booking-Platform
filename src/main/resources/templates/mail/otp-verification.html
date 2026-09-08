@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Verification</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 24px;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 550px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <tr>
+      <td style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 55%, #4f46e5 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+        <div style="display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(165, 180, 252, 0.4); border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #c7d2fe; margin-bottom: 8px;">ACCOUNT VERIFICATION</div>
+        <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">EventSphere</h1>
+        <p style="margin: 6px 0 0 0; font-size: 14px; color: #a5b4fc;">Confirm Your Email Address</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 32px 32px 24px 32px; text-align: center;">
+        <p style="font-size: 16px; color: #0f172a; margin: 0 0 12px 0;">Hello <b th:text="${name}">User</b>,</p>
+        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 24px 0;">Thank you for creating an account on EventSphere. Please use the 6-digit verification code below to activate your account and access event booking:</p>
+        <div style="background: #f8fafc; border: 2px dashed #6366f1; border-radius: 14px; padding: 22px; margin: 0 auto 24px auto; display: inline-block; min-width: 260px; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6366f1; margin-bottom: 8px;">VERIFICATION CODE</div>
+          <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 800; letter-spacing: 10px; color: #1e1b4b; display: inline-block; padding-left: 10px;" th:text="${otp}">123456</span>
+        </div>
+        <p style="font-size: 13px; color: #64748b; margin: 0 0 20px 0;">⏱️ This code will expire in <strong>10 minutes</strong> and can only be used once.</p>
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; font-size: 12px; color: #1e40af; text-align: left; line-height: 1.5;">
+          <strong style="color: #1e3a8a;">🛡️ Security Tip:</strong> Never share this verification code with anyone. EventSphere staff will never request your code.
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 24px 32px; background-color: #fafafa; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.6;">
+        <p style="margin: 0 0 4px 0;"><strong>EventSphere Security &amp; Identity</strong></p>
+        <p style="margin: 0; color: #94a3b8;">If you did not register for an EventSphere account, you can safely ignore this email.</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
