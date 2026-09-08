@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -291,11 +292,46 @@ public class PaymentServiceImpl implements PaymentService {
         booking.setConfirmedAt(LocalDateTime.now());
         bookingRepository.save(booking);
 
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEE, MMM dd, yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+
+        Event event = booking.getEvent();
+        String eventDate = (event != null && event.getStartDatetime() != null)
+                ? event.getStartDatetime().format(dateFormatter)
+                : "Date TBA";
+
+        String eventTime = "Time TBA";
+        if (event != null && event.getStartDatetime() != null) {
+            eventTime = event.getStartDatetime().format(timeFormatter);
+            if (event.getEndDatetime() != null) {
+                eventTime += " - " + event.getEndDatetime().format(timeFormatter);
+            }
+        }
+
+        String venueName = (event != null && event.getVenue() != null && event.getVenue().getName() != null)
+                ? event.getVenue().getName()
+                : "Venue TBA";
+
+        String venueAddress = "";
+        if (event != null && event.getVenue() != null) {
+            String addr = event.getVenue().getAddressLine();
+            String city = event.getVenue().getCity();
+            if (addr != null && !addr.isBlank()) {
+                venueAddress = addr + (city != null && !city.isBlank() ? ", " + city : "");
+            } else if (city != null && !city.isBlank()) {
+                venueAddress = city;
+            }
+        }
+
         String purchaserEmail = booking.getUser().getEmail();
         String purchaserName = booking.getUser().getFullName();
         List<TicketEmailItem> masterTicketList = new ArrayList<>();
 
         for (BookingItem item : booking.getItems()) {
+            String ticketTypeName = (item.getTicketType() != null && item.getTicketType().getName() != null)
+                    ? item.getTicketType().getName()
+                    : "General Admission";
+
             for (Ticket ticket : item.getTickets()) {
                 String signedPayload = ticketSigningUtil.buildSignedPayload(ticket.getTicketCode());
                 byte[] qrPng = qrCodeService.generateQrPng(signedPayload, 300);
@@ -306,6 +342,11 @@ public class PaymentServiceImpl implements PaymentService {
                         .seatNumber(ticket.getSeatNumber())
                         .ticketCode(ticket.getTicketCode())
                         .qrPng(qrPng)
+                        .ticketTypeName(ticketTypeName)
+                        .eventDate(eventDate)
+                        .eventTime(eventTime)
+                        .venueName(venueName)
+                        .venueAddress(venueAddress)
                         .build();
 
                 masterTicketList.add(emailItem);
@@ -316,7 +357,7 @@ public class PaymentServiceImpl implements PaymentService {
                     emailService.sendIndividualTicketPass(
                             guestEmail,
                             ticket.getAttendeeName(),
-                            booking.getEvent().getTitle(),
+                            event != null ? event.getTitle() : "Event Experience",
                             booking.getBookingReference(),
                             emailItem
                     );

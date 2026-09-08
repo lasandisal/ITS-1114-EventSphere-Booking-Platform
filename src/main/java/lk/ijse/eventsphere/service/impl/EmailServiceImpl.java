@@ -97,6 +97,11 @@ public class EmailServiceImpl implements EmailService {
 
             String plainText = "Hello " + attendeeName + ",\n\n"
                     + "Here is your official digital admission ticket for " + eventTitle + "!\n\n"
+                    + "Event: " + eventTitle + "\n"
+                    + "Date: " + (ticket.getEventDate() != null ? ticket.getEventDate() : "TBA") + "\n"
+                    + "Time: " + (ticket.getEventTime() != null ? ticket.getEventTime() : "TBA") + "\n"
+                    + "Venue: " + (ticket.getVenueName() != null ? ticket.getVenueName() : "TBA") + "\n"
+                    + "Ticket Tier: " + (ticket.getTicketTypeName() != null ? ticket.getTicketTypeName() : "General Admission") + "\n"
                     + "Attendee Name: " + ticket.getAttendeeName() + "\n"
                     + "Ticket Code: " + ticket.getTicketCode() + "\n"
                     + (ticket.getSeatNumber() != null && !ticket.getSeatNumber().isBlank() ? "Seat: " + ticket.getSeatNumber() + "\n" : "")
@@ -251,60 +256,77 @@ public class EmailServiceImpl implements EmailService {
     private String buildMasterReceiptHtml(String name, String eventTitle, String bookingReference,
                                           BigDecimal totalAmount, String currency, List<TicketEmailItem> tickets) {
         String formattedAmount = (totalAmount != null) ? totalAmount.setScale(2).toPlainString() : "0.00";
+        TicketEmailItem firstTicket = (tickets != null && !tickets.isEmpty()) ? tickets.get(0) : null;
+        String eventDate = (firstTicket != null && firstTicket.getEventDate() != null) ? firstTicket.getEventDate() : "Date TBA";
+        String eventTime = (firstTicket != null && firstTicket.getEventTime() != null) ? firstTicket.getEventTime() : "Time TBA";
+        String venueName = (firstTicket != null && firstTicket.getVenueName() != null) ? firstTicket.getVenueName() : "Venue TBA";
+        String venueAddress = (firstTicket != null && firstTicket.getVenueAddress() != null) ? firstTicket.getVenueAddress() : "";
+
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head>")
-                .append("<body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 24px;'>")
-                .append("<table align='center' border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 600px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>")
+                .append("<body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 24px;'>")
+                .append("<table align='center' border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 600px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);'>")
 
                 // Header Banner
-                .append("<tr><td style='background: #7d4f50; padding: 28px 24px; text-align: center; color: #ffffff;'>")
-                .append("<h1 style='margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;'>EventSphere</h1>")
-                .append("<p style='margin: 6px 0 0 0; font-size: 14px; color: #f2d6d7;'>Order Receipt &amp; Admission Passes</p>")
+                .append("<tr><td style='background: linear-gradient(135deg, #090d16 0%, #1e1b4b 55%, #4f46e5 100%); padding: 32px 24px; text-align: center; color: #ffffff;'>")
+                .append("<div style='display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(165, 180, 252, 0.4); border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #c7d2fe; margin-bottom: 8px;'>OFFICIAL RECEIPT &amp; PASSES</div>")
+                .append("<h1 style='margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;'>EventSphere</h1>")
+                .append("<p style='margin: 6px 0 0 0; font-size: 14px; color: #a5b4fc;'>Booking Confirmation &amp; Admission Passes</p>")
                 .append("</td></tr>")
 
                 // Content
                 .append("<tr><td style='padding: 28px 32px 16px 32px;'>")
-                .append("<p style='font-size: 16px; color: #1e293b; margin: 0 0 12px 0;'>Hello <b>").append(escape(name)).append("</b>,</p>")
-                .append("<p style='font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;'>Thank you for booking with EventSphere! Your order for <b>").append(escape(eventTitle)).append("</b> is confirmed. Below are your booking details and admission passes.</p>")
+                .append("<p style='font-size: 16px; color: #0f172a; margin: 0 0 8px 0;'>Hello <b>").append(escape(name)).append("</b>,</p>")
+                .append("<p style='font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;'>Thank you for booking with EventSphere! Your order for <b>").append(escape(eventTitle)).append("</b> is confirmed. Below are your event details, payment summary, and digital admission passes.</p>")
 
-                // Receipt Box
-                .append("<div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin-bottom: 24px; font-size: 14px; color: #334155;'>")
+                // Event & Receipt Summary Box
+                .append("<div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; font-size: 13px; color: #334155;'>")
+                .append("<div style='font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;'>").append(escape(eventTitle)).append("</div>")
                 .append("<table width='100%' border='0' cellpadding='0' cellspacing='0'>")
-                .append("<tr><td style='padding: 4px 0; color: #64748b;'>Booking Reference:</td><td align='right' style='padding: 4px 0;'><strong style='font-family: monospace; font-size: 13px;'>").append(escape(bookingReference)).append("</strong></td></tr>")
-                .append("<tr><td style='padding: 4px 0; color: #64748b;'>Event:</td><td align='right' style='padding: 4px 0;'><strong>").append(escape(eventTitle)).append("</strong></td></tr>")
-                .append("<tr><td style='padding: 4px 0; color: #64748b;'>Total Tickets:</td><td align='right' style='padding: 4px 0;'><strong>").append(tickets.size()).append("</strong></td></tr>")
-                .append("<tr><td style='padding: 8px 0 0 0; border-top: 1px dashed #cbd5e1; color: #1e293b; font-weight: 600;'>Total Paid:</td><td align='right' style='padding: 8px 0 0 0; border-top: 1px dashed #cbd5e1; color: #7d4f50; font-size: 16px; font-weight: 700;'>").append(escape(currency)).append(" ").append(formattedAmount).append("</td></tr>")
+                .append("<tr><td style='padding: 5px 0; color: #64748b;'>📅 Date:</td><td align='right' style='padding: 5px 0; font-weight: 600; color: #0f172a;'>").append(escape(eventDate)).append("</td></tr>")
+                .append("<tr><td style='padding: 5px 0; color: #64748b;'>⏰ Time:</td><td align='right' style='padding: 5px 0; font-weight: 600; color: #0f172a;'>").append(escape(eventTime)).append("</td></tr>")
+                .append("<tr><td style='padding: 5px 0; color: #64748b;'>📍 Venue:</td><td align='right' style='padding: 5px 0; font-weight: 600; color: #0f172a;'>").append(escape(venueName))
+                .append(!venueAddress.isBlank() ? " <span style='font-weight: 400; color: #64748b;'>(" + escape(venueAddress) + ")</span>" : "").append("</td></tr>")
+                .append("<tr><td style='padding: 5px 0; color: #64748b;'>🔖 Booking Reference:</td><td align='right' style='padding: 5px 0;'><code style='font-size: 12px; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-weight: 700;'>").append(escape(bookingReference)).append("</code></td></tr>")
+                .append("<tr><td style='padding: 5px 0; color: #64748b;'>🎟️ Total Tickets:</td><td align='right' style='padding: 5px 0; font-weight: 600; color: #0f172a;'>").append(tickets != null ? tickets.size() : 0).append("</td></tr>")
+                .append("<tr><td style='padding: 10px 0 0 0; border-top: 1px dashed #cbd5e1; color: #0f172a; font-weight: 700; font-size: 14px;'>Total Paid:</td><td align='right' style='padding: 10px 0 0 0; border-top: 1px dashed #cbd5e1; color: #4338ca; font-size: 18px; font-weight: 800;'>").append(escape(currency)).append(" ").append(formattedAmount).append("</td></tr>")
                 .append("</table>")
                 .append("</div>")
 
-                .append("<h3 style='font-size: 16px; font-weight: 600; margin: 0 0 16px 0; color: #1e293b;'>Your Digital Admission Passes</h3>")
+                .append("<h3 style='font-size: 16px; font-weight: 700; margin: 0 0 16px 0; color: #0f172a;'>Digital Admission Passes</h3>")
                 .append("</td></tr>");
 
         // Tickets List
-        for (int i = 0; i < tickets.size(); i++) {
-            TicketEmailItem t = tickets.get(i);
-            String cid = "receipt_qr" + i;
-            html.append("<tr><td style='padding: 0 32px 16px 32px;'>")
-                    .append("<div style='border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; background-color: #ffffff;'>")
-                    .append("<table width='100%' border='0' cellpadding='0' cellspacing='0'>")
-                    .append("<tr><td valign='top' style='font-size: 14px; color: #334155;'>")
-                    .append("<p style='margin: 0 0 6px 0;'><span style='color: #64748b;'>Attendee:</span> <b>").append(escape(t.getAttendeeName())).append("</b></p>");
-            if (t.getSeatNumber() != null && !t.getSeatNumber().isBlank()) {
-                html.append("<p style='margin: 0 0 6px 0;'><span style='color: #64748b;'>Seat / Zone:</span> <b>").append(escape(t.getSeatNumber())).append("</b></p>");
+        if (tickets != null) {
+            for (int i = 0; i < tickets.size(); i++) {
+                TicketEmailItem t = tickets.get(i);
+                String cid = "receipt_qr" + i;
+                html.append("<tr><td style='padding: 0 32px 20px 32px;'>")
+                        .append("<div style='border: 2px dashed #6366f1; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.06);'>")
+                        .append("<table width='100%' border='0' cellpadding='0' cellspacing='0'>")
+                        .append("<tr>")
+                        .append("<td width='55%' valign='top' style='font-size: 13px; color: #334155;'>")
+                        .append("<div style='margin-bottom: 8px;'><span style='background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700;'>✓ VALID PASS</span></div>")
+                        .append("<p style='margin: 0 0 6px 0;'><span style='color: #64748b;'>Attendee:</span> <b style='color: #0f172a;'>").append(escape(t.getAttendeeName())).append("</b></p>")
+                        .append("<p style='margin: 0 0 6px 0;'><span style='color: #64748b;'>Ticket Tier:</span> <b style='color: #4338ca;'>").append(escape(t.getTicketTypeName() != null ? t.getTicketTypeName() : "General Admission")).append("</b></p>");
+                if (t.getSeatNumber() != null && !t.getSeatNumber().isBlank()) {
+                    html.append("<p style='margin: 0 0 6px 0;'><span style='color: #64748b;'>Seat / Zone:</span> <b>").append(escape(t.getSeatNumber())).append("</b></p>");
+                }
+                html.append("<p style='margin: 0 0 6px 0;'><span style='color: #64748b;'>Ticket Code:</span> <code style='font-size: 11px; background: #e0e7ff; color: #3730a3; padding: 2px 5px; border-radius: 4px; font-weight: 600;'>").append(escape(t.getTicketCode())).append("</code></p>")
+                        .append("<p style='margin: 0;'><span style='color: #94a3b8; font-size: 11px;'>Booking Ref: ").append(escape(bookingReference)).append("</span></p>")
+                        .append("</td>")
+                        .append("<td width='45%' align='center' valign='middle' style='padding-left: 12px;'>")
+                        .append("<img src='cid:").append(cid).append("' width='140' height='140' alt='QR Code Pass' style='display: block; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; background: #ffffff;' />")
+                        .append("<p style='font-size: 11px; color: #64748b; margin: 6px 0 0 0; text-align: center;'>Scan at entrance</p>")
+                        .append("</td></tr></table>")
+                        .append("</div></td></tr>");
             }
-            html.append("<p style='margin: 0;'><span style='color: #64748b;'>Ticket Code:</span> <code style='font-size: 12px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;'>").append(escape(t.getTicketCode())).append("</code></p>")
-                    .append("</td></tr>")
-                    .append("<tr><td align='center' style='padding-top: 14px;'>")
-                    .append("<img src='cid:").append(cid).append("' width='160' height='160' alt='QR Code Pass' style='display: block; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px;' />")
-                    .append("<p style='font-size: 12px; color: #64748b; margin: 6px 0 0 0;'>Scan at venue entrance</p>")
-                    .append("</td></tr></table>")
-                    .append("</div></td></tr>");
         }
 
         // Footer
         html.append("<tr><td style='padding: 24px 32px; background-color: #fafafa; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.6;'>")
-                .append("<p style='margin: 0 0 6px 0;'><strong>EventSphere Ticketing Platform</strong></p>")
-                .append("<p style='margin: 0 0 6px 0;'>This is an official transactional receipt for your booking.</p>")
+                .append("<p style='margin: 0 0 4px 0;'><strong>EventSphere Ticketing Platform</strong></p>")
+                .append("<p style='margin: 0 0 4px 0;'>This is an official transactional receipt and entry pass for your booking.</p>")
                 .append("<p style='margin: 0; color: #94a3b8;'>Please present your digital QR code upon arrival at the venue.</p>")
                 .append("</td></tr></table></body></html>");
 
@@ -312,30 +334,75 @@ public class EmailServiceImpl implements EmailService {
     }
 
     private String buildIndividualTicketHtml(String name, String eventTitle, String bookingReference, TicketEmailItem ticket) {
+        String eventDate = (ticket != null && ticket.getEventDate() != null) ? ticket.getEventDate() : "Date TBA";
+        String eventTime = (ticket != null && ticket.getEventTime() != null) ? ticket.getEventTime() : "Time TBA";
+        String venueName = (ticket != null && ticket.getVenueName() != null) ? ticket.getVenueName() : "Venue TBA";
+        String venueAddress = (ticket != null && ticket.getVenueAddress() != null) ? ticket.getVenueAddress() : "";
+        String ticketTier = (ticket != null && ticket.getTicketTypeName() != null) ? ticket.getTicketTypeName() : "General Admission";
+
         return "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head>"
-                + "<body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 24px;'>"
-                + "<table align='center' border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 550px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>"
-                + "<tr><td style='background: #7d4f50; padding: 26px 24px; text-align: center; color: #ffffff;'>"
-                + "<h1 style='margin: 0; font-size: 20px; font-weight: 700;'>Your Admission Pass</h1>"
-                + "<p style='margin: 4px 0 0 0; font-size: 14px; color: #f2d6d7;'>EventSphere Digital Ticket</p>"
+                + "<body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 24px;'>"
+                + "<table align='center' border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 550px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);'>"
+                // Header
+                + "<tr><td style='background: linear-gradient(135deg, #090d16 0%, #1e1b4b 55%, #4f46e5 100%); padding: 32px 24px; text-align: center; color: #ffffff;'>"
+                + "<div style='display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(165, 180, 252, 0.4); border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #c7d2fe; margin-bottom: 8px;'>OFFICIAL DIGITAL PASS</div>"
+                + "<h1 style='margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;'>EventSphere</h1>"
+                + "<p style='margin: 6px 0 0 0; font-size: 14px; color: #a5b4fc;'>Verified Admission Pass</p>"
                 + "</td></tr>"
-                + "<tr><td style='padding: 28px 32px; text-align: center;'>"
-                + "<p style='font-size: 16px; color: #1e293b; margin: 0 0 8px 0;'>Hello <b>" + escape(name) + "</b>,</p>"
-                + "<p style='font-size: 14px; color: #475569; line-height: 1.5; margin: 0 0 20px 0;'>Here is your official digital admission ticket for <b>" + escape(eventTitle) + "</b>.</p>"
-                + "<div style='border: 2px dashed #7d4f50; border-radius: 10px; padding: 20px; background: #fafafa; display: inline-block; width: 85%; box-sizing: border-box;'>"
-                + "<img src='cid:guest_qr' width='180' height='180' alt='Admission QR Code' style='display: block; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; background: #ffffff;' />"
-                + "<p style='font-size: 12px; color: #64748b; margin: 10px 0 14px 0;'>Scan at venue entrance</p>"
-                + "<div style='font-size: 13px; color: #334155; text-align: left; background: #ffffff; padding: 12px 14px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.6;'>"
-                + "<div><span style='color: #64748b;'>Attendee:</span> <b>" + escape(ticket.getAttendeeName()) + "</b></div>"
+
+                // Greeting
+                + "<tr><td style='padding: 28px 32px 20px 32px; text-align: center;'>"
+                + "<p style='font-size: 16px; color: #0f172a; margin: 0 0 8px 0;'>Hello <b>" + escape(name) + "</b>,</p>"
+                + "<p style='font-size: 14px; color: #475569; line-height: 1.5; margin: 0 0 20px 0;'>Here is your official digital admission ticket for:</p>"
+
+                // Event Details Card
+                + "<div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; text-align: left;'>"
+                + "<div style='font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 12px;'>" + escape(eventTitle) + "</div>"
+                + "<table width='100%' border='0' cellpadding='0' cellspacing='0' style='font-size: 13px;'>"
+                + "<tr>"
+                + "<td width='50%' valign='top' style='padding: 6px 8px 6px 0;'>"
+                + "<div style='color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;'>📅 Date</div>"
+                + "<div style='font-weight: 600; color: #0f172a; margin-top: 2px;'>" + escape(eventDate) + "</div>"
+                + "</td>"
+                + "<td width='50%' valign='top' style='padding: 6px 0 6px 8px;'>"
+                + "<div style='color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;'>⏰ Time</div>"
+                + "<div style='font-weight: 600; color: #0f172a; margin-top: 2px;'>" + escape(eventTime) + "</div>"
+                + "</td>"
+                + "</tr>"
+                + "<tr>"
+                + "<td width='50%' valign='top' style='padding: 8px 8px 0 0; border-top: 1px solid #e2e8f0;'>"
+                + "<div style='color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;'>📍 Venue</div>"
+                + "<div style='font-weight: 600; color: #0f172a; margin-top: 2px;'>" + escape(venueName)
+                + (!venueAddress.isBlank() ? "<br><span style='font-size: 11px; font-weight: 400; color: #64748b;'>" + escape(venueAddress) + "</span>" : "") + "</div>"
+                + "</td>"
+                + "<td width='50%' valign='top' style='padding: 8px 0 0 8px; border-top: 1px solid #e2e8f0;'>"
+                + "<div style='color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;'>🎟️ Ticket Tier</div>"
+                + "<div style='font-weight: 600; color: #4338ca; margin-top: 2px;'>" + escape(ticketTier) + "</div>"
+                + "</td>"
+                + "</tr>"
+                + "</table>"
+                + "</div>"
+
+                // QR Code Pass Box
+                + "<div style='border: 2px dashed #6366f1; border-radius: 14px; padding: 22px; background: #ffffff; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08); margin: 0 auto 20px auto; max-width: 380px; box-sizing: border-box;'>"
+                + "<div style='text-align: center; margin-bottom: 12px;'>"
+                + "<span style='background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;'>✓ VALID ADMISSION PASS</span>"
+                + "</div>"
+                + "<img src='cid:guest_qr' width='180' height='180' alt='Admission QR Code' style='display: block; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; background: #ffffff;' />"
+                + "<p style='font-size: 12px; color: #64748b; margin: 10px 0 16px 0; text-align: center;'>Scan at venue entrance for admittance</p>"
+                + "<div style='font-size: 13px; color: #334155; text-align: left; background: #f8fafc; padding: 12px 14px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.6;'>"
+                + "<div><span style='color: #64748b;'>Attendee:</span> <b style='color: #0f172a;'>" + escape(ticket.getAttendeeName()) + "</b></div>"
                 + (ticket.getSeatNumber() != null && !ticket.getSeatNumber().isBlank() ? "<div><span style='color: #64748b;'>Seat / Zone:</span> <b>" + escape(ticket.getSeatNumber()) + "</b></div>" : "")
-                + "<div><span style='color: #64748b;'>Ticket Code:</span> <code style='font-size: 12px; background: #f1f5f9; padding: 2px 4px; border-radius: 3px;'>" + escape(ticket.getTicketCode()) + "</code></div>"
-                + "<div style='font-size: 11px; color: #94a3b8; margin-top: 6px; border-top: 1px solid #f1f5f9; padding-top: 6px;'>Booking Reference: " + escape(bookingReference) + "</div>"
+                + "<div><span style='color: #64748b;'>Ticket Code:</span> <code style='font-size: 12px; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-weight: 600;'>" + escape(ticket.getTicketCode()) + "</code></div>"
+                + "<div style='font-size: 11px; color: #94a3b8; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 6px;'>Booking Reference: <strong style='color: #64748b;'>" + escape(bookingReference) + "</strong></div>"
                 + "</div>"
                 + "</div>"
+
                 + "</td></tr>"
+                // Footer
                 + "<tr><td style='padding: 20px 32px; background-color: #fafafa; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.5;'>"
                 + "<p style='margin: 0 0 4px 0;'><strong>EventSphere Ticketing Platform</strong></p>"
-                + "<p style='margin: 0;'>Please have this digital QR pass ready on your device upon arrival at the venue.</p>"
+                + "<p style='margin: 0; color: #94a3b8;'>Please have this digital QR pass ready on your device upon arrival. Gates open 30 minutes prior to event start.</p>"
                 + "</td></tr></table></body></html>";
     }
 

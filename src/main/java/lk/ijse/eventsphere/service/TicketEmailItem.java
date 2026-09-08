@@ -17,4 +17,9 @@ public class TicketEmailItem {
     private final String seatNumber;
     private final String ticketCode;
     private final byte[] qrPng;
+    private final String ticketTypeName;
+    private final String eventDate;
+    private final String eventTime;
+    private final String venueName;
+    private final String venueAddress;
 }
