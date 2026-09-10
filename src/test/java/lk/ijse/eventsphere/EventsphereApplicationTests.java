@@ -192,6 +192,19 @@ class EventsphereApplicationTests {
                 "Booking status must transition to EXPIRED");
     }
 
+    @Autowired
+    private lk.ijse.eventsphere.service.OrganizerAnalyticsService organizerAnalyticsService;
+
+    @Test
+    @WithMockUser(username = "info.pulsefitgym@gmail.com", roles = {"ORGANIZER"})
+    void testOrganizerAnalyticsOverview() {
+        var overview = organizerAnalyticsService.getOverview();
+        Assertions.assertNotNull(overview);
+        System.out.println("TEST SUCCESS - TOTAL EVENTS: " + overview.getTotalEvents());
+        System.out.println("TEST SUCCESS - TOTAL TICKETS: " + overview.getTotalTicketsSold());
+        System.out.println("TEST SUCCESS - TOTAL REVENUE: " + overview.getTotalRevenue());
+    }
+
     @Test
     void testEmailThymeleafTemplatesRenderProperly() {
         // 1. Verify OTP Verification Template
