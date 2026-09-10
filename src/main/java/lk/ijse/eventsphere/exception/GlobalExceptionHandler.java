@@ -16,7 +16,7 @@ import java.util.Map;
 
 // Catches exceptions across every controller and returns the same
 // ErrorResponseDTO shape everywhere, per the coursework's "Global Controller
-// Advice" requirement — separates operational errors (expected, domain-level)
+// Advice" requirement â€” separates operational errors (expected, domain-level)
 // from systemic bugs (unexpected, logged as 500).
 @Slf4j
 @RestControllerAdvice
@@ -99,7 +99,7 @@ public class GlobalExceptionHandler {
     }
 
     // Business-rule violations raised as plain Java exceptions (bad date
-    // ranges, delete blocked by referential dependents, etc.) — these are
+    // ranges, delete blocked by referential dependents, etc.) â€” these are
     // expected/operational, not bugs, so they get 400 with the real message
     // instead of falling through to the generic 500 handler below.
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
@@ -108,7 +108,13 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
     }
 
-    // Catch-all — anything not explicitly mapped above is treated as an
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponseDTO> handleNoResourceFound(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, "Endpoint not found: " + request.getRequestURI(), request, null);
+    }
+
+    // Catch-all â€” anything not explicitly mapped above is treated as an
     // unexpected systemic bug, not surfaced to the client in detail.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> handleGeneric(

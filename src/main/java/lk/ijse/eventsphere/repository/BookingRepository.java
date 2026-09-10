@@ -65,6 +65,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByEventId(Long eventId);
 
+    @Query("SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.items i LEFT JOIN FETCH i.ticketType WHERE b.event.organizer.id = :organizerId ORDER BY b.createdAt DESC")
+    List<Booking> findByEventOrganizerId(@Param("organizerId") Long organizerId);
+
     List<Booking> findByStatus(BookingStatus status);
 
     @Query("SELECT COALESCE(SUM(b.totalAmount), 0) FROM Booking b WHERE b.status = :status")

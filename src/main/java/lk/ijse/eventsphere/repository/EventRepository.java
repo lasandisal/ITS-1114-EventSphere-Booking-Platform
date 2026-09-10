@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,6 +20,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Eagerly fetch associations for organizer dashboard
     @EntityGraph(attributePaths = {"organizer", "category", "venue"})
     Page<Event> findByOrganizerId(Long organizerId, Pageable pageable);
+
+    List<Event> findByOrganizerId(Long organizerId);
 
     // Eagerly fetch associations for admin dashboard
     @Override
