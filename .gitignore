@@ -34,6 +34,10 @@ build/
 
 ### Local Environment Variables ###
 .env
+.env.*
+.env.backup*
+!.env.example
+http-client.private.env.json
 
 # Runtime logs
 *.log
