@@ -11,12 +11,14 @@
   <img src="https://img.shields.io/badge/Google%20Gemini-3.5%20Flash%20Lite-8E75B2?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini" />
   <img src="https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/Render-Cloud%20Hosted-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Render" />
+  <a href="https://docs.google.com/document/d/1X6XspO6Vx_Vn0Wct_69B55BjL2htt4JV/edit?usp=sharing&ouid=105743732836393895401&rtpof=true&sd=true"><img src="https://img.shields.io/badge/Google%20Docs-Project%20Report-4285F4?style=for-the-badge&logo=googledocs&logoColor=white" alt="Project Report" /></a>
 </p>
 
 > **Course:** Final Coursework  
 > **Module:** ITS 1114 – Advanced API Development  
 > **Institution:** Institute of Java and Software Engineering (IJSE)  
 > **Author:** Lasandi Salwathura  
+> **Project Documentation:** [EventSphere Project Report (Google Docs)](https://docs.google.com/document/d/1X6XspO6Vx_Vn0Wct_69B55BjL2htt4JV/edit?usp=sharing&ouid=105743732836393895401&rtpof=true&sd=true)  
 > **Live API URL:** [https://its-1114-eventsphere-booking-platform.onrender.com](https://its-1114-eventsphere-booking-platform.onrender.com)  
 > **Frontend Application:** [https://eventsphere-webapp.vercel.app](https://eventsphere-webapp.vercel.app)
 
@@ -447,3 +449,4 @@ All 5 core test suites run against an in-memory/isolated MySQL configuration and
 - **Module:** ITS 1114 – Advanced API Development
 - **Institution:** Institute of Java and Software Engineering (IJSE)
 - **Author:** Lasandi Salwathura
+- **Project Report / Documentation:** [EventSphere Project Report (Google Docs)](https://docs.google.com/document/d/1X6XspO6Vx_Vn0Wct_69B55BjL2htt4JV/edit?usp=sharing&ouid=105743732836393895401&rtpof=true&sd=true)
