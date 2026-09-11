@@ -68,8 +68,13 @@ public class OrganizerEventController {
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<CommonResponse<EventResponseDTO>> cancel(@PathVariable Long id) {
-        EventResponseDTO event = eventService.cancelEvent(id);
+    public ResponseEntity<CommonResponse<EventResponseDTO>> cancel(
+            @PathVariable Long id,
+            @RequestBody(required = false) EventCancelRequestDTO request) {
+        String reason = (request != null && request.getReason() != null && !request.getReason().isBlank())
+                ? request.getReason().trim()
+                : null;
+        EventResponseDTO event = eventService.cancelEvent(id, reason);
         return ResponseEntity.ok(
                 CommonResponse.of(HttpStatus.OK.value(), "Event cancelled", event));
     }

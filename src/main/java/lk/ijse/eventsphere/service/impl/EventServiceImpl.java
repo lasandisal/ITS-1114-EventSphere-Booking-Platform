@@ -11,6 +11,12 @@ import lk.ijse.eventsphere.exception.ResourceNotFoundException;
 import lk.ijse.eventsphere.repository.*;
 import lk.ijse.eventsphere.security.CurrentUserProvider;
 import lk.ijse.eventsphere.service.EventService;
+import lk.ijse.eventsphere.enums.BookingStatus;
+import lk.ijse.eventsphere.enums.TicketStatus;
+import lk.ijse.eventsphere.service.EmailService;
+import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +39,8 @@ public class EventServiceImpl implements EventService {
     private final OrganizerRepository organizerRepository;
     private final TicketTypeRepository ticketTypeRepository;
     private final CurrentUserProvider currentUserProvider;
+    private final BookingRepository bookingRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -134,9 +142,76 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventResponseDTO cancelEvent(Long eventId) {
+        return cancelEvent(eventId, null);
+    }
+
+    @Override
+    @Transactional
+    public EventResponseDTO cancelEvent(Long eventId, String reason) {
         Event event = findEventOwnedByCurrentOrganizer(eventId);
         event.setStatus(EventStatus.CANCELLED);
         eventRepository.save(event);
+
+        String dateStr = event.getStartDatetime() != null
+                ? event.getStartDatetime().format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' hh:mm a"))
+                : "Scheduled Date";
+        String venueStr = event.getVenue() != null ? event.getVenue().getName() : "Scheduled Venue";
+
+        // Fetch bookings for this event and cascade cancellation
+        List<Booking> bookings = bookingRepository.findByEventId(eventId);
+        Set<String> notifiedEmails = new HashSet<>();
+
+        for (Booking booking : bookings) {
+            // Only active/confirmed/pending bookings need cancellation and emails
+            if (booking.getStatus() == BookingStatus.CONFIRMED || booking.getStatus() == BookingStatus.PENDING) {
+                booking.setStatus(BookingStatus.CANCELLED);
+
+                if (booking.getItems() != null) {
+                    for (BookingItem item : booking.getItems()) {
+                        if (item.getTickets() != null) {
+                            for (Ticket ticket : item.getTickets()) {
+                                ticket.setStatus(TicketStatus.CANCELLED);
+                            }
+                        }
+                    }
+                }
+                bookingRepository.save(booking);
+
+                // Notify attendee (only once per unique email address)
+                if (booking.getUser() != null && booking.getUser().getEmail() != null) {
+                    String email = booking.getUser().getEmail().trim();
+                    if (!notifiedEmails.contains(email)) {
+                        notifiedEmails.add(email);
+                        emailService.sendEventCancellationEmail(
+                                email,
+                                booking.getUser().getFullName(),
+                                event.getTitle(),
+                                dateStr,
+                                venueStr,
+                                reason,
+                                booking.getBookingReference(),
+                                false
+                        );
+                    }
+                }
+            }
+        }
+
+        // Also notify the organizer
+        if (event.getOrganizer() != null && event.getOrganizer().getUser() != null && event.getOrganizer().getUser().getEmail() != null) {
+            String orgEmail = event.getOrganizer().getUser().getEmail().trim();
+            emailService.sendEventCancellationEmail(
+                    orgEmail,
+                    event.getOrganizer().getBusinessName() != null ? event.getOrganizer().getBusinessName() : event.getOrganizer().getUser().getFullName(),
+                    event.getTitle(),
+                    dateStr,
+                    venueStr,
+                    reason,
+                    null,
+                    true
+            );
+        }
+
         return toDto(event, mapTicketTypes(eventId));
     }
 

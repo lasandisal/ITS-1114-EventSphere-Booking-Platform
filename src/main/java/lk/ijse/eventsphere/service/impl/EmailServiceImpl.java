@@ -250,6 +250,66 @@ public class EmailServiceImpl implements EmailService {
         sendOrderReceipt(recipientEmail, recipientName, eventTitle, bookingReference, BigDecimal.ZERO, "LKR", tickets);
     }
 
+
+    // =========================================================================
+    // 4. AUTOMATED EVENT CANCELLATION & REFUND NOTICES
+    // =========================================================================
+    @Override
+    @Async
+    public void sendEventCancellationEmail(String recipientEmail, String recipientName,
+                                           String eventTitle, String eventDate, String eventVenue,
+                                           String reason, String bookingReference,
+                                           boolean isOrganizer) {
+        log.info("[EMAIL] Initiating event cancellation notice to {} (isOrganizer: {})", recipientEmail, isOrganizer);
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            applyTransactionalHeaders(message, "CANCEL-" + (bookingReference != null ? bookingReference : "EVENT"));
+
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(senderEmail, "EventSphere");
+            helper.setReplyTo(senderEmail);
+            helper.setTo(recipientEmail);
+
+            String subject = isOrganizer
+                    ? "Event Cancelled Confirmation: " + eventTitle
+                    : "[Important] Cancellation & Refund Notice: " + eventTitle;
+            helper.setSubject(subject);
+
+            String plainText = isOrganizer
+                    ? "Hello " + recipientName + ",\n\n"
+                    + "Your event '" + eventTitle + "' scheduled for " + eventDate + " at " + eventVenue + " has been cancelled.\n"
+                    + "Reason: " + (reason != null && !reason.isBlank() ? reason : "Host decision") + "\n\n"
+                    + "All attendee admission passes have been voided and ticket sales stopped.\n\n"
+                    + "EventSphere Operations Team"
+                    : "Dear " + recipientName + ",\n\n"
+                    + "We regret to inform you that '" + eventTitle + "' scheduled for " + eventDate + " at " + eventVenue + " has been cancelled by the event host.\n\n"
+                    + "Reason: " + (reason != null && !reason.isBlank() ? reason : "Unforeseen circumstances") + "\n\n"
+                    + "What this means for you:\n"
+                    + "1. All digital admission passes and QR codes for this event have been voided.\n"
+                    + "2. A 100% refund is being processed to your original payment method via PayHere.\n"
+                    + "3. Refunds typically settle within 3 to 7 business days depending on your bank.\n\n"
+                    + (bookingReference != null && !bookingReference.isBlank() ? "Booking Reference: " + bookingReference + "\n\n" : "")
+                    + "Thank you for your understanding,\nEventSphere Team";
+
+            Context context = new Context();
+            context.setVariable("recipientName", (recipientName != null && !recipientName.isBlank()) ? recipientName : "Attendee");
+            context.setVariable("eventTitle", eventTitle);
+            context.setVariable("eventDate", (eventDate != null && !eventDate.isBlank()) ? eventDate : "Scheduled Date");
+            context.setVariable("eventVenue", (eventVenue != null && !eventVenue.isBlank()) ? eventVenue : "Scheduled Venue");
+            context.setVariable("reason", (reason != null && !reason.isBlank()) ? reason : "Unforeseen circumstances");
+            context.setVariable("bookingReference", bookingReference);
+            context.setVariable("isOrganizer", isOrganizer);
+
+            String htmlBody = templateEngine.process("mail/event-cancellation", context);
+            helper.setText(plainText, htmlBody);
+
+            mailSender.send(message);
+            log.info("[EMAIL SUCCESS] Event cancellation notice successfully dispatched to {}", recipientEmail);
+        } catch (Exception e) {
+            log.error("[EMAIL ERROR] Failed to send event cancellation notice to {}: {}", recipientEmail, e.getMessage(), e);
+        }
+    }
+
     private void applyTransactionalHeaders(MimeMessage message, String bookingReference) throws Exception {
         message.setHeader("X-Priority", "3");
         message.setHeader("Importance", "Normal");

@@ -34,4 +34,12 @@ public interface EmailService {
      * 6-digit Password Reset OTP sent upon forgot password request.
      */
     void sendPasswordResetOtpEmail(String recipientEmail, String recipientName, String otp);
+
+    /**
+     * Automated event cancellation notice sent to attendees and the host.
+     */
+    void sendEventCancellationEmail(String recipientEmail, String recipientName,
+                                    String eventTitle, String eventDate, String eventVenue,
+                                    String reason, String bookingReference,
+                                    boolean isOrganizer);
 }

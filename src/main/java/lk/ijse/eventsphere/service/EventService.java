@@ -16,6 +16,8 @@ public interface EventService {
 
     EventResponseDTO cancelEvent(Long eventId);
 
+    EventResponseDTO cancelEvent(Long eventId, String reason);
+
     EventResponseDTO getEventById(Long eventId);
 
     // Public discovery — PUBLISHED events only. Backs both the browse UI and

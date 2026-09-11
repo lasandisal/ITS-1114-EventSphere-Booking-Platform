@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Cancellation Notice</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 24px;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background: #ffffff; border: 1px solid #fecaca; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.25);">
+
+    <!-- Header Banner with Red Accent -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #090d16 0%, #1f1424 50%, #991b1b 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+        <div style="display: inline-block; padding: 5px 14px; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(248, 113, 113, 0.5); border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #fca5a5; margin-bottom: 10px;">
+          ⚠ EVENT CANCELLED
+        </div>
+        <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">EventSphere</h1>
+        <p style="margin: 6px 0 0 0; font-size: 14px; color: #fca5a5;" th:text="${isOrganizer} ? 'Event Host Cancellation Confirmation' : 'Important Notice: Event Cancellation &amp; Refund'">
+          Important Notice: Event Cancellation &amp; Refund
+        </p>
+      </td>
+    </tr>
+
+    <!-- Body Content -->
+    <tr>
+      <td style="padding: 28px 32px 20px 32px;">
+        <p style="font-size: 16px; color: #0f172a; margin: 0 0 12px 0;">Hello <b th:text="${recipientName}">Guest</b>,</p>
+
+        <!-- Dynamic Lead Paragraph -->
+        <p th:if="${!isOrganizer}" style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
+          We regret to inform you that <b style="color: #0f172a;" th:text="${eventTitle}">Event Title</b>, originally scheduled for <b th:text="${eventDate}">Date</b> at <b th:text="${eventVenue}">Venue</b>, has been cancelled by the event host.
+        </p>
+        <p th:if="${isOrganizer}" style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
+          This confirmation acknowledges that you have cancelled your event <b style="color: #0f172a;" th:text="${eventTitle}">Event Title</b> originally scheduled for <b th:text="${eventDate}">Date</b> at <b th:text="${eventVenue}">Venue</b>.
+        </p>
+
+        <!-- Event Details & Cancellation Reason Box -->
+        <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 12px; padding: 20px; margin-bottom: 24px; font-size: 13px; color: #334155;">
+          <div style="font-size: 16px; font-weight: 700; color: #9f1239; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #fecdd3;" th:text="${eventTitle}">Event Title</div>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding: 5px 0; color: #881337; font-weight: 500;">📅 Scheduled Date:</td>
+              <td align="right" style="padding: 5px 0; font-weight: 600; color: #0f172a;" th:text="${eventDate}">Date TBA</td>
+            </tr>
+            <tr>
+              <td style="padding: 5px 0; color: #881337; font-weight: 500;">📍 Venue:</td>
+              <td align="right" style="padding: 5px 0; font-weight: 600; color: #0f172a;" th:text="${eventVenue}">Venue TBA</td>
+            </tr>
+            <tr th:if="${bookingReference != null and !#strings.isEmpty(bookingReference)}">
+              <td style="padding: 5px 0; color: #881337; font-weight: 500;">🔖 Booking Reference:</td>
+              <td align="right" style="padding: 5px 0;">
+                <code style="font-size: 12px; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-weight: 700;" th:text="${bookingReference}">REF-123456</code>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0 0 0; border-top: 1px dashed #fecdd3; color: #9f1239; font-weight: 700;">Cancellation Reason:</td>
+              <td align="right" style="padding: 10px 0 0 0; border-top: 1px dashed #fecdd3; color: #b91c1c; font-weight: 700;" th:text="${reason}">Unforeseen circumstances</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Next Steps: For Attendee -->
+        <div th:if="${!isOrganizer}">
+          <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 12px 0; color: #0f172a;">What this means for you:</h3>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; font-size: 13px; color: #475569; line-height: 1.6;">
+            <tr>
+              <td width="24" valign="top" style="color: #ef4444; font-size: 16px; font-weight: bold;">✕</td>
+              <td style="padding-bottom: 10px;">
+                <strong style="color: #0f172a;">Admission Passes Voided:</strong> All digital QR codes and tickets issued for this event have been permanently deactivated and cannot be used at the venue.
+              </td>
+            </tr>
+            <tr>
+              <td width="24" valign="top" style="color: #10b981; font-size: 16px; font-weight: bold;">✓</td>
+              <td style="padding-bottom: 10px;">
+                <strong style="color: #0f172a;">100% Refund:</strong> A full refund is being processed back to your original payment card or account via PayHere IPG.
+              </td>
+            </tr>
+            <tr>
+              <td width="24" valign="top" style="color: #6366f1; font-size: 16px; font-weight: bold;">⏱</td>
+              <td>
+                <strong style="color: #0f172a;">Settlement Timeline:</strong> Funds typically reflect in your bank or card account within 3 to 7 business days depending on your issuing bank.
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Next Steps: For Organizer -->
+        <div th:if="${isOrganizer}">
+          <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 12px 0; color: #0f172a;">Host Management Summary:</h3>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; font-size: 13px; color: #475569; line-height: 1.6;">
+            <tr>
+              <td width="24" valign="top" style="color: #ef4444; font-size: 16px; font-weight: bold;">✕</td>
+              <td style="padding-bottom: 10px;">
+                <strong style="color: #0f172a;">Sales Suspended:</strong> Public discovery, checkout, and gate check-in scanning have been immediately terminated.
+              </td>
+            </tr>
+            <tr>
+              <td width="24" valign="top" style="color: #10b981; font-size: 16px; font-weight: bold;">✓</td>
+              <td style="padding-bottom: 10px;">
+                <strong style="color: #0f172a;">Attendees Notified:</strong> Automated cancellation emails have been dispatched to registered ticket holders.
+              </td>
+            </tr>
+            <tr>
+              <td width="24" valign="top" style="color: #6366f1; font-size: 16px; font-weight: bold;">📊</td>
+              <td>
+                <strong style="color: #0f172a;">Refund Audit Manifest:</strong> You can download the itemized attendee CSV and roster from your dashboard to complete reversals in the PayHere Merchant Portal.
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #64748b; line-height: 1.6; margin: 16px 0 0 0;">
+          If you have questions regarding this cancellation, please contact EventSphere Support or reply to this email with your booking reference.
+        </p>
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td style="padding: 24px 32px; background-color: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b; line-height: 1.6;">
+        <p style="margin: 0 0 4px 0;"><strong>EventSphere Operations &amp; Support</strong></p>
+        <p style="margin: 0; color: #94a3b8;">This is an automated transactional notice regarding your event registration.</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
