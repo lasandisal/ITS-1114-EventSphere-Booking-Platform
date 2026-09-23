@@ -377,15 +377,15 @@ All endpoints return a standardized envelope response:
    PAYHERE_MODE=sandbox
    PAYHERE_MERCHANT_ID=your_merchant_id
    PAYHERE_MERCHANT_SECRET=your_merchant_secret
-   PAYHERE_RETURN_URL=http://localhost:5500/pages/my-bookings.html
-   PAYHERE_CANCEL_URL=http://localhost:5500/pages/booking.html
+   PAYHERE_RETURN_URL=http://localhost:8000/pages/my-bookings.html
+   PAYHERE_CANCEL_URL=http://localhost:8000/pages/my-bookings.html
    PAYHERE_NOTIFY_URL=http://localhost:7080/api/v1/payments/notify
 
    # Google Gemini API
    GEMINI_API_KEY=your_gemini_api_key
 
    # CORS Allowed Origins
-   APP_CORS_ALLOWED_ORIGINS=http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,https://eventsphere-webapp.vercel.app
+   APP_CORS_ALLOWED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000,http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,https://eventsphere-webapp.vercel.app
    ```
 
 3. **Build the Backend:**
