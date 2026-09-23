@@ -150,9 +150,14 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponseDTO cancelBooking(Long bookingId) {
         Booking booking = findOwnedBooking(bookingId);
 
-        if (booking.getStatus() != BookingStatus.PENDING) {
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
             throw new IllegalStateException(
                     "Only a pending booking can be cancelled this way — confirmed bookings need a refund workflow");
+        }
+
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.EXPIRED) {
+            // Already cancelled or expired — idempotent operation
+            return toDto(booking);
         }
 
         releaseInventory(booking);
