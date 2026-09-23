@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +58,7 @@ public class AssistantServiceImpl implements AssistantService {
             - Always use your tools (`search_events`, `get_event_details`, `get_my_bookings`) to look up real, live data from the database.
             - NEVER fabricate or guess event titles, prices, dates, seat counts, or booking references.
             - You are read-only: you cannot book or process payments yourself. Guide the user to finish their booking directly in the EventSphere web app.
+            - When the user asks for events in a specific timeframe (e.g. 'this weekend', 'tomorrow', 'next week'), compare the event startDatetime against today's date. If no events match that timeframe, explicitly state that no events are scheduled for that period before offering alternatives.
 
             ================================================================================
             4. TONE & FORMAT:
@@ -81,13 +84,15 @@ public class AssistantServiceImpl implements AssistantService {
         contents.add(Map.of("role", "user", "parts", List.of(Map.of("text", request.getMessage()))));
 
         String replyText;
+        String dynamicSystemPrompt = SYSTEM_PROMPT + "\nToday's date and time is: "
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy HH:mm")) + ".\n";
 
         try {
             JsonNode response = null;
             int iterations = 0;
 
             while (true) {
-                response = geminiApiClient.generateContent(SYSTEM_PROMPT, contents, AssistantToolDefinitions.all());
+                response = geminiApiClient.generateContent(dynamicSystemPrompt, contents, AssistantToolDefinitions.all());
                 JsonNode parts = response.path("candidates").path(0).path("content").path("parts");
 
                 List<JsonNode> functionCalls = new ArrayList<>();

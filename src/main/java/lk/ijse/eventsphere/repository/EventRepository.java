@@ -38,8 +38,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("""
         SELECT e FROM Event e 
         WHERE e.status = :status 
+          AND e.startDatetime >= CURRENT_TIMESTAMP
           AND (:keyword IS NULL OR :keyword = '' OR LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) 
           AND (:categoryId IS NULL OR e.category.id = :categoryId)
+        ORDER BY e.startDatetime ASC
     """)
     Page<Event> searchPublishedEvents(
             @Param("status") EventStatus status,
